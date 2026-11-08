@@ -40,6 +40,7 @@ This roadmap describes intended work. Items are not considered complete until co
 
 ## Milestone 3 — Sample-level study analysis
 
+- [x] Add calibrated 3D morphometry for researcher-annotated Z-Y-X label volumes.
 - Add structured import of experimental-design tables and sample identifiers.
 - Add aggregation rules for fields nested within sections and biological specimens.
 - Add mixed-effects or hierarchical models for nested and repeated-measures data.
