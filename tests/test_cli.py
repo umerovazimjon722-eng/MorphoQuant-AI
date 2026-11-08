@@ -373,3 +373,31 @@ def test_cli_measure_volume_rejects_missing_z_calibration(tmp_path):
             "measure-volume", str(source),
             "--output", str(tmp_path / "out.csv"),
         ])
+
+
+def test_cli_measure_volume_refuses_non_first_series_until_series_calibration_is_supported(tmp_path):
+    import tifffile
+    import pytest
+
+    labels = np.zeros((4, 8, 9), dtype=np.uint8)
+    source = tmp_path / "labels.ome.tif"
+    tifffile.imwrite(
+        source,
+        labels,
+        ome=True,
+        metadata={
+            "axes": "ZYX",
+            "PhysicalSizeX": 0.25,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.25,
+            "PhysicalSizeYUnit": "µm",
+            "PhysicalSizeZ": 1.0,
+            "PhysicalSizeZUnit": "µm",
+        },
+    )
+    with pytest.raises(SystemExit):
+        main([
+            "measure-volume", str(source),
+            "--series-index", "1",
+            "--output", str(tmp_path / "out.csv"),
+        ])
