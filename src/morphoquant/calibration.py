@@ -38,6 +38,24 @@ class MicroscopeCalibration:
     micrometers_per_pixel_x: float | None = None
     micrometers_per_pixel_y: float | None = None
 
+    @classmethod
+    def from_isotropic_reference(
+        cls,
+        *,
+        reference_pixels: float,
+        reference_length_um: float,
+    ) -> "MicroscopeCalibration":
+        """Build an isotropic calibration from a measured scale-bar length.
+
+        reference_pixels is the measured scale-bar length in image pixels;
+        reference_length_um is its stated physical length in micrometres.
+        Use this only when isotropic pixel spacing is justified. For
+        anisotropic images, provide independently measured X and Y scales.
+        """
+        pixels = _positive_finite(reference_pixels, "reference_pixels")
+        length = _positive_finite(reference_length_um, "reference_length_um")
+        return cls(micrometers_per_pixel=length / pixels)
+
     def __post_init__(self) -> None:
         if self.micrometers_per_pixel is not None:
             if (
