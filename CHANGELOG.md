@@ -13,6 +13,6 @@ All notable project changes are documented here.
 - Added sample-level descriptive summaries, Welch and Mann–Whitney independent-group comparisons, and Benjamini–Hochberg FDR adjustment.
 - Added a command-line interface through the `morphoquant` command.
 - Added automated tests and a GitHub Actions Python-version matrix.
-- Added methodological notes and a histology analysis record template.
+- Added methodological notes, a histology analysis record template, a validation plan, and a milestone-based development roadmap.
 
 This release does not perform automated tissue segmentation, cell detection, adrenal-zone classification, machine-learning inference, or clinical diagnosis. It is an early research prototype.
