@@ -152,11 +152,32 @@ calibration = MicroscopeCalibration(
 The `morphoquant.statistical_analysis` module provides descriptive summaries, two-group comparisons, and Benjamini–Hochberg false-discovery-rate adjustment.
 
 ```python
-from morphoquant import compare_independent_groups, describe_samples, adjust_pvalues_bh
+from morphoquant import (
+    aggregate_subsamples_by_unit,
+    compare_independent_groups,
+    describe_samples,
+    adjust_pvalues_bh,
+)
 
 # One value per independent biological replicate, not one value per microscope field.
 control = [12.1, 11.8, 12.5, 11.9, 12.3]
 treated = [14.0, 13.7, 14.4, 13.9, 14.1]
+
+# If each animal has multiple fields, aggregate first:
+field_records = [
+    {"animal_id": "A1", "group": "control", "area": 10.0},
+    {"animal_id": "A1", "group": "control", "area": 12.0},
+    {"animal_id": "A2", "group": "control", "area": 11.0},
+    {"animal_id": "B1", "group": "metabolic", "area": 15.0},
+    {"animal_id": "B1", "group": "metabolic", "area": 17.0},
+]
+sample_level = aggregate_subsamples_by_unit(
+    field_records,
+    biological_unit_key="animal_id",
+    measurement_key="area",
+    group_key="group",
+)
+print(sample_level)
 
 print(describe_samples(control))
 print(compare_independent_groups(control, treated, method="welch"))
