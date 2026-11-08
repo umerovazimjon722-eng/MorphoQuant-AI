@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+from numbers import Integral
 from pathlib import Path
 from typing import Union
 
@@ -48,9 +49,13 @@ def write_analysis_metadata(
         raise ValueError("mask_shape must contain two positive dimensions.")
     if foreground not in ("bright", "dark"):
         raise ValueError("foreground must be either 'bright' or 'dark'.")
-    if isinstance(min_area_px, bool) or min_area_px < 1:
+    if isinstance(min_area_px, bool) or not isinstance(min_area_px, Integral) or min_area_px < 1:
         raise ValueError("min_area_px must be a positive integer.")
-    if isinstance(measurement_count, bool) or measurement_count < 0:
+    if (
+        isinstance(measurement_count, bool)
+        or not isinstance(measurement_count, Integral)
+        or measurement_count < 0
+    ):
         raise ValueError("measurement_count must be a non-negative integer.")
 
     destination = (
