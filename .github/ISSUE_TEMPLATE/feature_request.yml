@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a focused, research-relevant capability
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Research or software problem
+      description: What reproducibility, measurement, or usability problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the input, output, units, and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation or acceptance criteria
+      description: How could the implementation be tested? Include synthetic examples where possible.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safeguards
+    attributes:
+      label: Research safeguards
+      options:
+        - label: I have considered calibration, experimental-unit structure, and data provenance.
+          required: false
+        - label: I will not share confidential or identifiable research data.
+          required: true
