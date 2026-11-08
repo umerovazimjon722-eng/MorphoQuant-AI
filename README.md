@@ -20,7 +20,8 @@ MorphoQuant AI aims to provide transparent, modular, and testable workflows for 
 - Load researcher-prepared grayscale binary masks with explicit foreground rules.
 - Require an explicit threshold for grayscale masks with more than two intensity values.
 - Calibrate isotropic images or images with different horizontal and vertical pixel spacing.
-- Measure 8-connected 2D components: pixel area, physical area, digital contour perimeter, equivalent diameter, pixel and physical centroids, eccentricity, and solidity.
+- Measure 8-connected 2D components in binary masks: pixel area, physical area, digital contour perimeter, equivalent diameter, pixel and physical centroids, eccentricity, and solidity.
+- Summarize researcher-annotated integer label masks class by class (for example, cortex and medulla), including area fraction, component count, component-size summaries, contour length, and area-weighted centroid.
 - Export measurements to a stable CSV schema.
 - Write a JSON provenance sidecar containing input/output SHA-256 checksums, calibration, mask settings, software version, and measurement parameters.
 - Run as an installable Python package or through a command-line interface.
@@ -49,7 +50,7 @@ python -m pytest -q
 
 ## Command-line usage
 
-For a two-level grayscale mask (dark background, bright foreground):
+For a two-level grayscale binary mask (dark background, bright foreground):
 
 ```bash
 morphoquant measure-mask sample_mask.png \
@@ -79,7 +80,30 @@ morphoquant measure-mask grayscale_mask.png \
 
 The command creates a CSV file and, by default, a companion `measurements.metadata.json` file. Use `--metadata-output path.json` to choose another sidecar path. The JSON records checksums and analysis settings; it does not establish that the input mask is biologically correct.
 
-Run `morphoquant --help` or `morphoquant measure-mask --help` for all options.
+For an already annotated integer label image (for example, class 1 = cortex and class 2 = medulla), create an optional class-name JSON file:
+
+```json
+{
+  "1": "cortex",
+  "2": "medulla"
+}
+```
+
+Then run:
+
+```bash
+morphoquant measure-labels adrenal_zones.png \
+  --micrometers-per-pixel-x 0.25 \
+  --micrometers-per-pixel-y 0.27 \
+  --class-names class_names.json \
+  --background-label 0 \
+  --min-area-px 20 \
+  --output results/adrenal_zone_summary.csv
+```
+
+This command summarizes only the classes already present in the integer label image. It does not detect or assign cortex/medulla labels. It produces a class-summary CSV and a JSON provenance sidecar.
+
+Run `morphoquant --help`, `morphoquant measure-mask --help`, or `morphoquant measure-labels --help` for all options.
 
 ## Python example
 
@@ -169,6 +193,7 @@ src/morphoquant/
 ├── image_io.py
 ├── masks.py
 ├── morphometry.py
+├── labeled_morphometry.py
 ├── csv_export.py
 ├── provenance.py
 └── cli.py
