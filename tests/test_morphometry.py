@@ -54,3 +54,44 @@ def test_mask_must_be_boolean_and_two_dimensional():
         measure_binary_mask(np.zeros((5, 5), dtype=np.uint8), calibration)
     with pytest.raises(ValueError):
         measure_binary_mask(np.zeros((2, 5, 5), dtype=bool), calibration)
+
+
+def test_anisotropic_calibration_uses_both_pixel_axes():
+    calibration = MicroscopeCalibration(
+        micrometers_per_pixel_x=0.5,
+        micrometers_per_pixel_y=1.0,
+    )
+    assert calibration.scale_x_um == pytest.approx(0.5)
+    assert calibration.scale_y_um == pytest.approx(1.0)
+    assert calibration.area_um2(200) == pytest.approx(100.0)
+    assert calibration.is_isotropic is False
+
+
+def test_anisotropic_measurements_scale_area_centroid_and_perimeter():
+    mask = np.zeros((30, 30), dtype=bool)
+    mask[5:15, 8:28] = True
+    calibration = MicroscopeCalibration(
+        micrometers_per_pixel_x=0.5,
+        micrometers_per_pixel_y=1.0,
+    )
+
+    result = measure_binary_mask(mask, calibration)[0]
+
+    assert result["area_px2"] == 200
+    assert result["area_um2"] == pytest.approx(100.0)
+    assert result["centroid_x_um"] == pytest.approx(8.75)
+    assert result["centroid_y_um"] == pytest.approx(9.5)
+    assert result["perimeter_um"] == pytest.approx(40.0, abs=1.0)
+    assert result["pixel_size_x_um"] == pytest.approx(0.5)
+    assert result["pixel_size_y_um"] == pytest.approx(1.0)
+
+
+def test_calibration_rejects_incomplete_or_mixed_axis_scales():
+    with pytest.raises(ValueError):
+        MicroscopeCalibration(micrometers_per_pixel_x=0.5)
+    with pytest.raises(ValueError):
+        MicroscopeCalibration(
+            micrometers_per_pixel=0.5,
+            micrometers_per_pixel_x=0.5,
+            micrometers_per_pixel_y=0.5,
+        )
