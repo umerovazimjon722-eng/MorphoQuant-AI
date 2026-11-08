@@ -12,6 +12,7 @@ from .labeled_morphometry import measure_labeled_mask
 from .masks import load_binary_mask, load_labeled_mask
 from .morphometry import measure_binary_mask
 from .provenance import write_analysis_metadata
+from .tiff_metadata import read_tiff_metadata
 
 
 def _add_calibration_arguments(parser: argparse.ArgumentParser) -> None:
@@ -28,6 +29,11 @@ def _add_calibration_arguments(parser: argparse.ArgumentParser) -> None:
         help="horizontal pixel size in micrometres per pixel (use with the y value)",
     )
     parser.add_argument(
+        "--use-tiff-metadata",
+        action="store_true",
+        help="read calibrated X/Y pixel sizes from TIFF/OME-TIFF metadata",
+    )
+    parser.add_argument(
         "--micrometers-per-pixel-y",
         type=float,
         default=None,
@@ -36,11 +42,29 @@ def _add_calibration_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _build_calibration(args: argparse.Namespace) -> MicroscopeCalibration:
+    supplied_scales = (
+        args.micrometers_per_pixel,
+        args.micrometers_per_pixel_x,
+        args.micrometers_per_pixel_y,
+    )
+    if args.use_tiff_metadata:
+        if any(value is not None for value in supplied_scales):
+            raise ValueError(
+                "Do not combine --use-tiff-metadata with manually supplied pixel sizes."
+            )
+        return read_tiff_metadata(args.mask).to_calibration()
+
     return MicroscopeCalibration(
         micrometers_per_pixel=args.micrometers_per_pixel,
         micrometers_per_pixel_x=args.micrometers_per_pixel_x,
         micrometers_per_pixel_y=args.micrometers_per_pixel_y,
     )
+
+
+def _calibration_source(args: argparse.Namespace) -> str:
+    if args.use_tiff_metadata:
+        return "TIFF/OME-TIFF metadata; verify against acquisition records"
+    return "user-supplied calibrated scale or independently measured scale bar"
 
 
 def _validate_output_paths(
@@ -201,6 +225,7 @@ def _run_binary_analysis(args: argparse.Namespace, parser: argparse.ArgumentPars
             measurement_count=len(measurements),
             metadata_path=args.metadata_output,
             analysis_type="2D connected-component morphometry of a researcher-provided binary mask",
+            calibration_source=_calibration_source(args),
         )
     except (FileNotFoundError, TypeError, ValueError, OSError) as exc:
         parser.error(str(exc))
@@ -241,6 +266,7 @@ def _run_labeled_analysis(args: argparse.Namespace, parser: argparse.ArgumentPar
             ),
             label_names=class_names,
             result_count_label="class_count",
+            calibration_source=_calibration_source(args),
         )
     except (FileNotFoundError, TypeError, ValueError, OSError) as exc:
         parser.error(str(exc))
