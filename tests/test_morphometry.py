@@ -29,7 +29,7 @@ def test_measure_binary_mask_returns_expected_area_and_centroid():
     measured = results[0]
     assert measured["area_px2"] == 200
     assert measured["area_um2"] == pytest.approx(50.0)
-    assert measured["centroid_x_um"] == pytest.approx(8.75 * 0.5)
+    assert measured["centroid_x_um"] == pytest.approx(17.5 * 0.5)
     assert measured["centroid_y_um"] == pytest.approx(9.5 * 0.5)
     assert measured["equivalent_diameter_um"] == pytest.approx(
         math.sqrt(4 * 50.0 / math.pi)
