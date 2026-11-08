@@ -12,6 +12,7 @@ from .statistical_analysis import (
     describe_samples,
 )
 from .tiff_metadata import TiffImageMetadata, read_tiff_metadata
+from .visualization import save_label_overlay
 
 __all__ = [
     "MicroscopeCalibration",
@@ -27,5 +28,6 @@ __all__ = [
     "adjust_pvalues_bh",
     "TiffImageMetadata",
     "read_tiff_metadata",
+    "save_label_overlay",
 ]
 __version__ = "0.1.0"

@@ -202,3 +202,47 @@ def test_cli_rejects_mixing_tiff_metadata_and_manual_calibration(tmp_path):
                 str(tmp_path / "out.csv"),
             ]
         )
+
+
+def test_cli_creates_visual_overlay_for_annotated_tissue_zones(tmp_path, capsys):
+    image = np.full((18, 24, 3), 150, dtype=np.uint8)
+    labels = np.zeros((18, 24), dtype=np.uint8)
+    labels[2:10, 2:15] = 1
+    labels[11:16, 17:22] = 2
+    image_path = tmp_path / "original.png"
+    mask_path = tmp_path / "labels.png"
+    names_path = tmp_path / "classes.json"
+    output = tmp_path / "qc" / "overlay.png"
+    Image.fromarray(image, mode="RGB").save(image_path)
+    Image.fromarray(labels, mode="L").save(mask_path)
+    names_path.write_text(json.dumps({"1": "cortex", "2": "medulla"}), encoding="utf-8")
+
+    result = main([
+        "overlay-labels", str(image_path), str(mask_path),
+        "--class-names", str(names_path), "--alpha", "0.4",
+        "--output", str(output),
+    ])
+
+    assert result == 0
+    assert output.is_file()
+    assert "visual quality-control preview" in capsys.readouterr().out
+
+
+def test_cli_overlay_refuses_to_overwrite_source_image(tmp_path):
+    import pytest
+
+    image = np.zeros((8, 8, 3), dtype=np.uint8)
+    labels = np.zeros((8, 8), dtype=np.uint8)
+    image_path = tmp_path / "original.png"
+    mask_path = tmp_path / "labels.png"
+    Image.fromarray(image, mode="RGB").save(image_path)
+    Image.fromarray(labels, mode="L").save(mask_path)
+    original_bytes = image_path.read_bytes()
+
+    with pytest.raises(SystemExit):
+        main([
+            "overlay-labels", str(image_path), str(mask_path),
+            "--output", str(image_path),
+        ])
+
+    assert image_path.read_bytes() == original_bytes

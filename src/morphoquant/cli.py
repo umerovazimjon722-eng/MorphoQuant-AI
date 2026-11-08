@@ -196,6 +196,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="minimum connected component area in pixels (default: 1)",
     )
 
+    overlay = subparsers.add_parser(
+        "overlay-labels",
+        help="create a visual QC overlay for a researcher-annotated label image",
+    )
+    overlay.add_argument("image", type=Path, help="original microscopy image")
+    overlay.add_argument("mask", type=Path, help="grayscale integer label image")
+    overlay.add_argument("--output", type=Path, required=True, help="destination PNG preview")
+    overlay.add_argument("--class-names", type=Path, default=None, help="optional class-name JSON")
+    overlay.add_argument("--background-label", type=int, default=0)
+    overlay.add_argument("--alpha", type=float, default=0.35)
+    overlay.add_argument("--max-dimension", type=int, default=2400)
+
     return parser
 
 
@@ -278,6 +290,33 @@ def _run_labeled_analysis(args: argparse.Namespace, parser: argparse.ArgumentPar
     return 0
 
 
+def _run_overlay_analysis(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        image_path = args.image.resolve()
+        mask_path = args.mask.resolve()
+        output_path = args.output.resolve()
+        class_names_path = args.class_names.resolve() if args.class_names is not None else None
+        if output_path in {image_path, mask_path}:
+            raise ValueError("The overlay PNG must not overwrite the source image or label mask.")
+        if class_names_path is not None and output_path == class_names_path:
+            raise ValueError("The overlay PNG must not overwrite the class-names JSON.")
+
+        image = load_rgb_image(args.image)
+        mask = load_labeled_mask(args.mask)
+        class_names = _load_class_names(args.class_names)
+        written = save_label_overlay(
+            image, mask, args.output,
+            class_names=class_names,
+            background_label=args.background_label,
+            alpha=args.alpha,
+            max_dimension=args.max_dimension,
+        )
+    except (FileNotFoundError, TypeError, ValueError, OSError) as exc:
+        parser.error(str(exc))
+    print(f"Wrote visual quality-control preview to {written}.")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI. argv is injectable for tests."""
     parser = build_parser()
@@ -287,6 +326,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_binary_analysis(args, parser)
     if args.command == "measure-labels":
         return _run_labeled_analysis(args, parser)
+    if args.command == "overlay-labels":
+        return _run_overlay_analysis(args, parser)
 
     parser.error("A command is required.")
     return 2

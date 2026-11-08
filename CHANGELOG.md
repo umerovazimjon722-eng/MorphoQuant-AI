@@ -11,6 +11,7 @@ All notable project changes are documented here.
 - Added stable CSV export.
 - Added JSON analysis provenance with input and output SHA-256 checksums.
 - Added class-wise morphometry for researcher-annotated integer label masks, including tissue-zone summaries and area fractions.
+- Added lossless side-by-side PNG previews with class-colored annotation overlays, boundaries, and legends for visual quality control.
 - Added a biological-unit aggregation helper to reduce pseudoreplication risk when fields or sections are nested within animals/specimens.
 - Added TIFF/OME-TIFF metadata inspection and safe extraction of physical pixel calibration when units are explicit.
 - Added isotropic calibration derivation from a measured scale bar.

@@ -55,3 +55,10 @@ Metadata-derived spacing should still be checked against the microscope acquisit
 The helper `MicroscopeCalibration.from_isotropic_reference` computes micrometres per pixel as physical reference length divided by the measured scale-bar length in pixels. Use this only when equal X and Y pixel spacing is justified. If X and Y spacing differ, measure both axes independently and provide both calibration values.
 
 Do not use a scale bar that has been resized independently of the image or whose physical label/provenance cannot be verified.
+
+
+## Visual quality-control overlays
+
+The visualization helper renders two panels from an RGB source image and an integer annotation mask: the original image and a color overlay with class boundaries and a legend. It does not alter the source arrays or infer class identities. Color assignment is deterministic for a given sorted set of class IDs.
+
+For memory control, previews can be downscaled to a maximum panel dimension. Downscaled output is for visual review only; do not use the preview pixels for quantitative measurement. Run morphometry on the original-resolution label mask with the original calibration metadata. Review overlays against the original image before accepting quantitative results.

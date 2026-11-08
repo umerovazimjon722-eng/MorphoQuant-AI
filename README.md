@@ -24,6 +24,7 @@ MorphoQuant AI aims to provide transparent, modular, and testable workflows for 
 - Calibrate isotropic images or images with different horizontal and vertical pixel spacing.
 - Measure 8-connected 2D components in binary masks: pixel area, physical area, digital contour perimeter, equivalent diameter, pixel and physical centroids, eccentricity, and solidity.
 - Summarize researcher-annotated integer label masks class by class (for example, cortex and medulla), including area fraction, component count, component-size summaries, contour length, and area-weighted centroid.
+- Create side-by-side PNG quality-control previews that overlay annotated classes on the original microscopy image, with boundaries and a class legend.
 - Export measurements to a stable CSV schema.
 - Write a JSON provenance sidecar containing input/output SHA-256 checksums, calibration, mask settings, software version, and measurement parameters.
 - Run as an installable Python package or through a command-line interface.
@@ -105,7 +106,19 @@ morphoquant measure-labels adrenal_zones.png \
 
 This command summarizes only the classes already present in the integer label image. It does not detect or assign cortex/medulla labels. It produces a class-summary CSV and a JSON provenance sidecar.
 
-Run `morphoquant --help`, `morphoquant measure-mask --help`, or `morphoquant measure-labels --help` for all options.
+Create a side-by-side visual quality-control preview:
+
+```bash
+morphoquant overlay-labels adrenal_section.png adrenal_zones.png \
+  --class-names class_names.json \
+  --alpha 0.35 \
+  --max-dimension 2400 \
+  --output results/adrenal_zones_qc.png
+```
+
+The PNG includes the original image, a color overlay with boundaries, and a legend listing class IDs and pixel-area proportions. Large images are downscaled for preview only; quantitative measurements must use the original arrays. The tool visualizes supplied labels and does not segment tissue or infer class identity.
+
+Run `morphoquant --help`, `morphoquant measure-mask --help`, `morphoquant measure-labels --help`, or `morphoquant overlay-labels --help` for all options.
 
 ## Python example
 
@@ -240,6 +253,7 @@ src/morphoquant/
 ├── masks.py
 ├── morphometry.py
 ├── labeled_morphometry.py
+├── visualization.py
 ├── csv_export.py
 ├── provenance.py
 └── cli.py
