@@ -40,3 +40,18 @@ Each class is split into 8-connected components. Components smaller than the con
 Area-weighted centroid coordinates summarize the spatial location of the retained class pixels. The reported aggregate perimeter is the sum of component contour estimates. It is not a measure of a closed anatomical boundary where the mask contains disconnected islands or holes.
 
 Before comparing class percentages between specimens, ensure that field-of-view selection, section orientation, tissue sampling, and annotation criteria are harmonized. A 2D area fraction is not automatically equivalent to a 3D volume fraction.
+
+
+## TIFF and OME-TIFF metadata
+
+The TIFF metadata reader inspects the first image series without loading all pixel planes into memory. It reports the series shape, axes, data type, number of series, and whether OME-XML is present.
+
+Physical X/Y pixel spacing is accepted from OME-XML only when both values and recognized length units are available. For plain TIFF, resolution tags are accepted only when the resolution unit explicitly specifies inches or centimetres. If the unit is absent, unknown, or incomplete, no physical calibration is returned.
+
+Metadata-derived spacing should still be checked against the microscope acquisition record or a calibrated scale. Cropping, resizing, resampling, export, or conversion can invalidate the original physical pixel size. For multi-series TIFF files, the current reader reports calibration for the first series only; inspect each series separately before treating a multi-series acquisition as one calibrated image.
+
+## Calibration from a scale bar
+
+The helper `MicroscopeCalibration.from_isotropic_reference` computes micrometres per pixel as physical reference length divided by the measured scale-bar length in pixels. Use this only when equal X and Y pixel spacing is justified. If X and Y spacing differ, measure both axes independently and provide both calibration values.
+
+Do not use a scale bar that has been resized independently of the image or whose physical label/provenance cannot be verified.
