@@ -81,3 +81,6 @@ Component surface area is estimated from a closed marching-cubes mesh generated 
 The TIFF loader requires axes exactly ZYX and checks a configurable uncompressed-memory limit before decoding. Time series, channels, RGB, and ambiguous dimension orders must be selected or reordered explicitly. Physical Z spacing must be present in metadata. Nominal section thickness is not automatically equivalent to center-to-center section spacing.
 
 The software does not register serial sections. Before interpreting a stack as a 3D specimen, validate section order, registration, missing sections, tissue deformation, shrinkage, and Z sampling interval. A 3D volume fraction requires a valid 3D sampling/reconstruction design.
+
+
+The 3D CLI currently accepts only the first TIFF series because the metadata reader's calibration record describes that first series. Do not use a different series index with the first series' calibration. Extract the required series into a separate ZYX file or extend the metadata selection to that series before analysis.
