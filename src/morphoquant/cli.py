@@ -91,6 +91,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "measure-mask":
         try:
+            input_path = args.mask.resolve()
+            output_path_requested = args.output.resolve()
+            metadata_path_requested = (
+                args.metadata_output.resolve() if args.metadata_output is not None else None
+            )
+            if input_path == output_path_requested:
+                raise ValueError("The output CSV path must not overwrite the input mask.")
+            if metadata_path_requested is not None and metadata_path_requested in {
+                input_path,
+                output_path_requested,
+            }:
+                raise ValueError("The metadata JSON path must differ from the input mask and output CSV.")
+
             calibration = MicroscopeCalibration(
                 micrometers_per_pixel=args.micrometers_per_pixel,
                 micrometers_per_pixel_x=args.micrometers_per_pixel_x,
