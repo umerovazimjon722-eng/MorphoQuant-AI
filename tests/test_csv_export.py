@@ -13,8 +13,12 @@ def sample_row():
         "perimeter_px": 18.0,
         "perimeter_um": 4.5,
         "equivalent_diameter_um": 2.52,
+        "centroid_x_px": 4.0,
+        "centroid_y_px": 6.0,
         "centroid_x_um": 2.0,
         "centroid_y_um": 3.0,
+        "pixel_size_x_um": 0.5,
+        "pixel_size_y_um": 0.5,
         "eccentricity": 0.5,
         "solidity": 1.0,
     }
