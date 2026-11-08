@@ -126,6 +126,16 @@ for region in measurements:
     print(region)
 ```
 
+The CLI can use OME-TIFF calibration directly when both physical X/Y scales and units are recorded:
+
+```bash
+morphoquant measure-mask binary_mask.ome.tif \
+  --use-tiff-metadata \
+  --output results/measurements.csv
+```
+
+Do not combine `--use-tiff-metadata` with manually supplied pixel sizes. If metadata is absent or incomplete, the command fails instead of guessing.
+
 Inspect a TIFF/OME-TIFF file without loading the full image into memory:
 
 ```python
