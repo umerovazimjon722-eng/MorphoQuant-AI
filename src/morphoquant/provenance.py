@@ -63,6 +63,8 @@ def write_analysis_metadata(
         if metadata_path is not None
         else output_path.with_name(f"{output_path.stem}.metadata.json")
     )
+    if destination.resolve() in {input_path.resolve(), output_path.resolve()}:
+        raise ValueError("Metadata output must not overwrite the input mask or result CSV.")
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     metadata = {
