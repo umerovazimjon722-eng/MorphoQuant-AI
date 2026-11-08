@@ -35,6 +35,7 @@ def write_analysis_metadata(
     analysis_type: str = "2D connected-component morphometry of a researcher-provided binary mask",
     label_names: Mapping[int, str] | None = None,
     result_count_label: str = "component_count",
+    calibration_source: str = "user-supplied calibrated scale or independently measured scale bar",
 ) -> Path:
     """Write a JSON sidecar recording inputs, parameters, units, and checksums.
 
@@ -54,6 +55,8 @@ def write_analysis_metadata(
         raise ValueError("foreground must be 'bright', 'dark', or None.")
     if not isinstance(result_count_label, str) or not result_count_label.isidentifier():
         raise ValueError("result_count_label must be a valid identifier.")
+    if not isinstance(calibration_source, str) or not calibration_source.strip():
+        raise ValueError("calibration_source must be a non-empty string.")
     if not isinstance(analysis_type, str) or not analysis_type.strip():
         raise ValueError("analysis_type must be a non-empty string.")
     if label_names is not None:
@@ -107,7 +110,7 @@ def write_analysis_metadata(
             "pixel_size_x_um": calibration.scale_x_um,
             "pixel_size_y_um": calibration.scale_y_um,
             "isotropic": calibration.is_isotropic,
-            "source": "user-supplied; verify against calibrated scale bar or acquisition metadata",
+            "source": calibration_source.strip(),
         },
         "measurement_parameters": {
             "connectivity": 8,
