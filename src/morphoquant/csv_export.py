@@ -105,3 +105,51 @@ def write_labeled_measurements_csv(
         writer.writerows(rows)
 
     return output_path
+
+
+VOLUME_MEASUREMENT_COLUMNS = (
+    "class_id",
+    "class_name",
+    "component_count",
+    "voxel_count",
+    "volume_um3",
+    "foreground_volume_percent",
+    "mean_component_volume_um3",
+    "median_component_volume_um3",
+    "mean_equivalent_sphere_diameter_um",
+    "total_surface_area_um2",
+    "sphericity",
+    "volume_weighted_centroid_z_um",
+    "volume_weighted_centroid_y_um",
+    "volume_weighted_centroid_x_um",
+    "voxel_size_z_um",
+    "voxel_size_y_um",
+    "voxel_size_x_um",
+    "connectivity",
+)
+
+
+def write_volume_measurements_csv(
+    measurements: Iterable[Mapping[str, object]],
+    path: PathLike,
+) -> Path:
+    """Write calibrated 3D class-wise volume measurements to CSV."""
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    rows = list(measurements)
+    for index, row in enumerate(rows):
+        missing = set(VOLUME_MEASUREMENT_COLUMNS).difference(row)
+        if missing:
+            raise ValueError(
+                f"Volume measurement row {index} is missing required fields: "
+                + ", ".join(sorted(missing))
+            )
+    with output_path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=VOLUME_MEASUREMENT_COLUMNS,
+            extrasaction="ignore",
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+    return output_path
