@@ -29,7 +29,7 @@ def _validated_sample(values: Iterable[float], name: str) -> np.ndarray:
     return sample
 
 
-def describe_samples(values: Iterable[float]) -> Dict[str, float | int | None]:
+def describe_samples(values: Iterable[float]) -> Dict[str, float | int]:
     """Return descriptive statistics for independent sample-level values."""
     sample = _validated_sample(values, "values")
     q1, median, q3 = np.quantile(sample, [0.25, 0.5, 0.75])
@@ -56,8 +56,9 @@ def compare_independent_groups(
 
     Welch's test returns a two-sided p-value and a Welch-Satterthwaite
     confidence interval for the difference in means (group A minus group B).
-    Mann–Whitney returns a two-sided p-value and rank-biserial correlation;
-    it does not return a confidence interval for the median difference.
+    Mann–Whitney returns a two-sided p-value and rank-biserial correlation.
+    The descriptive means and medians are reported for both methods, but they
+    are not the estimand of the Mann–Whitney test.
 
     Selection of a test must be justified by the research design and data
     characteristics. This function does not automatically test assumptions,
@@ -77,44 +78,51 @@ def compare_independent_groups(
 
     mean_a = float(np.mean(a))
     mean_b = float(np.mean(b))
-    difference = mean_a - mean_b
     result: Dict[str, float | int | str | None] = {
         "method": method,
         "n_a": int(a.size),
         "n_b": int(b.size),
-        "mean_a": mean_a,
-        "mean_b": mean_b,
-        "mean_difference_a_minus_b": difference,
+        "descriptive_mean_a": mean_a,
+        "descriptive_mean_b": mean_b,
+        "descriptive_mean_difference_a_minus_b": mean_a - mean_b,
         "median_a": float(np.median(a)),
         "median_b": float(np.median(b)),
         "statistic": None,
         "degrees_of_freedom": None,
         "p_value": None,
         "confidence_level": float(confidence_level),
+        "estimated_mean_difference_a_minus_b": None,
         "ci_lower_mean_difference": None,
         "ci_upper_mean_difference": None,
         "rank_biserial_correlation": None,
     }
 
     if method == "welch":
-        test = stats.ttest_ind(a, b, equal_var=False, alternative="two-sided")
         var_a = float(np.var(a, ddof=1))
         var_b = float(np.var(b, ddof=1))
         term_a = var_a / a.size
         term_b = var_b / b.size
         standard_error_squared = term_a + term_b
         denominator = (term_a**2 / (a.size - 1)) + (term_b**2 / (b.size - 1))
+        if standard_error_squared == 0 or denominator == 0:
+            raise ValueError(
+                "Welch's t-test is undefined when both groups have zero within-group variance."
+            )
+
+        test = stats.ttest_ind(a, b, equal_var=False, alternative="two-sided")
         degrees_freedom = standard_error_squared**2 / denominator
         critical_value = float(
             stats.t.ppf((1.0 + float(confidence_level)) / 2.0, degrees_freedom)
         )
         margin = critical_value * float(np.sqrt(standard_error_squared))
+        difference = mean_a - mean_b
 
         result.update(
             {
                 "statistic": float(test.statistic),
                 "degrees_of_freedom": float(degrees_freedom),
                 "p_value": float(test.pvalue),
+                "estimated_mean_difference_a_minus_b": difference,
                 "ci_lower_mean_difference": float(difference - margin),
                 "ci_upper_mean_difference": float(difference + margin),
             }
