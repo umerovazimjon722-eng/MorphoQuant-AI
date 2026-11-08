@@ -388,6 +388,11 @@ def _run_group_comparison(args: argparse.Namespace, parser: argparse.ArgumentPar
 def _run_volume_analysis(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     try:
         _validate_output_paths(args.volume, args.output, args.metadata_output)
+        if args.series_index != 0:
+            raise ValueError(
+                "The CLI currently calibrates the first TIFF series only; "
+                "select the required series into a separate ZYX file before analysis."
+            )
         metadata = read_tiff_metadata(args.volume)
         calibration = metadata.to_voxel_calibration()
         labels = load_labeled_volume_tiff(
