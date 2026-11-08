@@ -2,7 +2,12 @@ import csv
 
 import pytest
 
-from morphoquant.csv_export import MEASUREMENT_COLUMNS, write_measurements_csv
+from morphoquant.csv_export import (
+    LABELED_MEASUREMENT_COLUMNS,
+    MEASUREMENT_COLUMNS,
+    write_labeled_measurements_csv,
+    write_measurements_csv,
+)
 
 
 def sample_row():
@@ -50,3 +55,36 @@ def test_write_measurements_csv_writes_header_for_empty_results(tmp_path):
 def test_write_measurements_csv_rejects_incomplete_row(tmp_path):
     with pytest.raises(ValueError, match="missing required fields"):
         write_measurements_csv([{"label": 1}], tmp_path / "bad.csv")
+
+
+def test_write_labeled_measurements_csv_preserves_class_summary_schema(tmp_path):
+    row = {
+        "class_id": 1,
+        "class_name": "cortex",
+        "component_count": 2,
+        "area_px2": 100,
+        "area_um2": 25.0,
+        "foreground_area_percent": 75.0,
+        "mean_component_area_um2": 12.5,
+        "median_component_area_um2": 12.5,
+        "mean_equivalent_diameter_um": 3.0,
+        "total_perimeter_px": 40.0,
+        "total_perimeter_um": 10.0,
+        "area_weighted_centroid_x_um": 2.0,
+        "area_weighted_centroid_y_um": 3.0,
+        "mean_component_eccentricity": 0.3,
+        "mean_component_solidity": 0.9,
+        "pixel_size_x_um": 0.5,
+        "pixel_size_y_um": 0.5,
+    }
+    output = write_labeled_measurements_csv([row], tmp_path / "zones.csv")
+    with output.open(encoding="utf-8", newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+    assert list(rows[0]) == list(LABELED_MEASUREMENT_COLUMNS)
+    assert rows[0]["class_name"] == "cortex"
+    assert rows[0]["foreground_area_percent"] == "75.0"
+
+
+def test_write_labeled_measurements_csv_rejects_missing_class_fields(tmp_path):
+    with pytest.raises(ValueError, match="missing required fields"):
+        write_labeled_measurements_csv([{"class_id": 1}], tmp_path / "bad-zones.csv")
