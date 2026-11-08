@@ -33,3 +33,12 @@ Welch's test still relies on independent observations and is most reliable when 
 At minimum, report the experimental unit, group sample sizes, summary statistics, selected test and rationale, test statistic, degrees of freedom where applicable, raw p-value, adjusted p-value when used, effect estimate and confidence interval where available, and relevant limitations.
 
 Do not interpret statistical significance as biological importance. Consider effect magnitude, uncertainty, study design, prior evidence, and measurement validity. The software does not automatically select the statistically appropriate test for a particular experiment.
+
+
+## Aggregating fields and sections within the experimental unit
+
+The helper `aggregate_subsamples_by_unit` accepts row dictionaries in which each row represents a field, section, or other subsample. It groups those rows by a biological-unit identifier (for example, animal ID) and returns one summary value per biological unit. An optional group key is checked for consistency so that a single animal cannot silently be assigned to two experimental groups.
+
+Choose mean or median aggregation before inspecting group differences and justify that choice in the protocol. This simple aggregation is suitable only when a sample-level summary matches the scientific estimand. It does not model within-animal variation; use an appropriate mixed-effects or hierarchical model when that variation is itself scientifically important.
+
+After aggregation, the number of returned rows is the number of biological units, not the number of image fields. Keep the original subsample data and document the aggregation rule.
