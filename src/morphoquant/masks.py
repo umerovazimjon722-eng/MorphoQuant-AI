@@ -1,5 +1,6 @@
 """Strict loading helpers for researcher-prepared binary masks."""
 
+from numbers import Real
 from pathlib import Path
 from typing import Literal, Union
 
@@ -67,7 +68,7 @@ def load_binary_mask(
         selected_value = unique_values[-1] if foreground == "bright" else unique_values[0]
         return np.asarray(values == selected_value, dtype=bool)
 
-    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
+    if isinstance(threshold, bool) or not isinstance(threshold, Real):
         raise TypeError("threshold must be a finite numeric value or None.")
     if not np.isfinite(threshold):
         raise ValueError("threshold must be finite.")
