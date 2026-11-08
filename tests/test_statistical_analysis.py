@@ -25,7 +25,7 @@ def test_welch_comparison_returns_mean_difference_and_confidence_interval():
         method="welch",
     )
     assert result["method"] == "welch"
-    assert result["mean_difference_a_minus_b"] == pytest.approx(-4.0)
+    assert result["estimated_mean_difference_a_minus_b"] == pytest.approx(-4.0)
     assert result["p_value"] < 0.05
     assert result["ci_lower_mean_difference"] < -4.0
     assert result["ci_upper_mean_difference"] > -4.0
@@ -65,3 +65,8 @@ def test_group_comparison_rejects_nonfinite_and_invalid_method():
 def test_bh_rejects_invalid_p_values(values):
     with pytest.raises(ValueError):
         adjust_pvalues_bh(values)
+
+
+def test_welch_rejects_zero_variance_in_both_groups():
+    with pytest.raises(ValueError, match="zero within-group variance"):
+        compare_independent_groups([2, 2, 2], [5, 5, 5], method="welch")
