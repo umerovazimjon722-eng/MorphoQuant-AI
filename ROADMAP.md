@@ -11,6 +11,7 @@ This roadmap describes intended work. Items are not considered complete until co
 - [x] Strict loading of researcher-prepared grayscale masks.
 - [x] Isotropic and anisotropic pixel calibration.
 - [x] 2D connected-component morphometric measurements.
+- [x] Class-wise summaries for researcher-annotated integer tissue-zone masks.
 - [x] CSV output with explicit physical units.
 - [x] JSON provenance sidecar and source/output checksums.
 - [x] Descriptive statistics, Welch and Mann–Whitney comparisons, and Benjamini–Hochberg adjustment.
