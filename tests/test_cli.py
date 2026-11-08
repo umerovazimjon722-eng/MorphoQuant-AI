@@ -308,6 +308,7 @@ def test_cli_compare_groups_refuses_to_overwrite_input(tmp_path):
 
 def test_cli_measures_ome_tiff_3d_label_volume_and_writes_provenance(tmp_path, capsys):
     import tifffile
+    import pytest
 
     labels = np.zeros((5, 12, 14), dtype=np.uint8)
     labels[1:4, 2:7, 3:9] = 1
