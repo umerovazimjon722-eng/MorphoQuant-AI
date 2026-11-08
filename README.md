@@ -5,6 +5,7 @@
 [![Tests](https://github.com/umerovazimjon722-eng/MorphoQuant-AI/actions/workflows/tests.yml/badge.svg)](https://github.com/umerovazimjon722-eng/MorphoQuant-AI/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
+[![CodeQL](https://github.com/umerovazimjon722-eng/MorphoQuant-AI/actions/workflows/codeql.yml/badge.svg)](https://github.com/umerovazimjon722-eng/MorphoQuant-AI/actions/workflows/codeql.yml)
 
 > **Development status:** Early research prototype. The current release provides mask-based morphometric measurements and provenance records. It is not an AI segmentation system, a validated diagnostic tool, or a medical device.
 
@@ -249,7 +250,7 @@ docs/
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), open an issue before substantial changes, add tests, document units and assumptions, and report validation limitations.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and [Security Policy](SECURITY.md). Use the issue templates to report bugs or propose focused features. Pull requests should add tests, document units and assumptions, and report validation limitations.
 
 Do not upload identifiable patient data, confidential laboratory records, credentials, or experimental data that have not been approved for public release.
 
