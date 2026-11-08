@@ -103,3 +103,25 @@ Do not publish identifiable patient data, confidential laboratory records, or an
 Do not describe the software as biologically validated, clinically accurate, diagnostic, or ready for routine pathology use until independent validation has been completed and the dataset, protocol, performance metrics, confidence intervals, failure modes, and limitations are documented.
 
 A passing unit-test suite establishes software behavior on its test cases only. It does not establish biological validity.
+
+
+## 9. Additional validation for 3D morphometry
+
+Before reporting a 3D volume fraction or surface-area descriptor:
+
+- verify that the TIFF series axes are genuinely Z-Y-X and that channel/time axes have been selected explicitly;
+- verify physical X/Y pixel sizes and the center-to-center Z sampling interval;
+- document section thickness separately from inter-section spacing;
+- preserve original section order and record any missing or damaged sections;
+- assess and document serial-section registration error and tissue deformation;
+- document any resampling, interpolation, or missing-section reconstruction;
+- compare 3D labels against expert-reviewed reference volumes where feasible;
+- perform sensitivity analyses for voxel spacing, segmentation boundaries, and section sampling interval.
+
+The current toolkit does not register sections or reconstruct missing anatomy. Its 3D measurements assume that the input label volume is already spatially aligned. Surface area is a marching-cubes estimate and should be checked for resolution and discretization sensitivity.
+
+## 10. Inter-annotator or segmentation agreement
+
+Use the annotation-agreement module to compare two aligned label arrays. Prespecify which array is the reference, how disagreements are adjudicated, and which classes are primary.
+
+Report per-class Dice and IoU together with prevalence and boundary-distance metrics (ASSD and Hausdorff-95). Include the physical pixel/voxel spacing and state the array axis order. Agreement metrics are not interchangeable with accuracy against biological truth; common systematic annotation errors can produce high agreement.
