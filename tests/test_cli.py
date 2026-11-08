@@ -57,3 +57,26 @@ def test_cli_writes_header_when_mask_has_no_foreground(tmp_path):
     ) == 0
     assert output.is_file()
     assert output.with_name("empty.metadata.json").is_file()
+
+
+def test_cli_refuses_to_overwrite_input_mask(tmp_path):
+    import pytest
+
+    source = tmp_path / "mask.png"
+    original = np.zeros((8, 8), dtype=np.uint8)
+    Image.fromarray(original, mode="L").save(source)
+    original_bytes = source.read_bytes()
+
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "measure-mask",
+                str(source),
+                "--micrometers-per-pixel",
+                "1",
+                "--output",
+                str(source),
+            ]
+        )
+
+    assert source.read_bytes() == original_bytes
