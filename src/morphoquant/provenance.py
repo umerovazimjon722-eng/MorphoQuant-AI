@@ -26,7 +26,7 @@ def write_analysis_metadata(
     input_mask_path: PathLike,
     output_csv_path: PathLike,
     calibration: MicroscopeCalibration,
-    mask_shape: tuple[int, int],
+    mask_shape: tuple[int, ...],
     foreground: str | None,
     threshold: float | None,
     min_area_px: int,
@@ -49,8 +49,8 @@ def write_analysis_metadata(
         raise FileNotFoundError(f"Input mask does not exist: {input_path}")
     if not output_path.is_file():
         raise FileNotFoundError(f"Output CSV does not exist: {output_path}")
-    if len(mask_shape) != 2 or any(int(size) < 1 for size in mask_shape):
-        raise ValueError("mask_shape must contain two positive dimensions.")
+    if len(mask_shape) not in (2, 3) or any(int(size) < 1 for size in mask_shape):
+        raise ValueError("mask_shape must contain two or three positive dimensions.")
     if foreground is not None and foreground not in ("bright", "dark"):
         raise ValueError("foreground must be 'bright', 'dark', or None.")
     if not isinstance(result_count_label, str) or not result_count_label.isidentifier():
@@ -96,7 +96,8 @@ def write_analysis_metadata(
         "input_mask": {
             "file_name": input_path.name,
             "sha256": _sha256(input_path),
-            "shape_rows_columns": [int(mask_shape[0]), int(mask_shape[1])],
+            "shape_axes_order": "YX" if len(mask_shape) == 2 else "ZYX",
+            "shape": [int(size) for size in mask_shape],
             "foreground": foreground,
             "threshold": threshold,
             "class_names": {str(key): value for key, value in label_names.items()} if label_names is not None else None,
