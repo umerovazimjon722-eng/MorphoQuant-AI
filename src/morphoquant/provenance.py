@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Mapping, Union
 
 from . import __version__
-from .calibration import MicroscopeCalibration
+from .calibration import MicroscopeCalibration, VoxelCalibration
 
 PathLike = Union[str, Path]
 
@@ -25,7 +25,7 @@ def write_analysis_metadata(
     *,
     input_mask_path: PathLike,
     output_csv_path: PathLike,
-    calibration: MicroscopeCalibration,
+    calibration: MicroscopeCalibration | VoxelCalibration,
     mask_shape: tuple[int, ...],
     foreground: str | None,
     threshold: float | None,
@@ -77,6 +77,27 @@ def write_analysis_metadata(
     ):
         raise ValueError("measurement_count must be a non-negative integer.")
 
+    if isinstance(calibration, MicroscopeCalibration):
+        calibration_metadata = {
+            "dimension": "2D",
+            "pixel_size_x_um": calibration.scale_x_um,
+            "pixel_size_y_um": calibration.scale_y_um,
+            "isotropic": calibration.is_isotropic,
+            "source": calibration_source.strip(),
+        }
+    elif isinstance(calibration, VoxelCalibration):
+        z_um, y_um, x_um = calibration.spacing_zyx_um
+        calibration_metadata = {
+            "dimension": "3D",
+            "voxel_size_z_um": z_um,
+            "voxel_size_y_um": y_um,
+            "voxel_size_x_um": x_um,
+            "voxel_volume_um3": calibration.voxel_volume_um3,
+            "source": calibration_source.strip(),
+        }
+    else:
+        raise TypeError("calibration must be a MicroscopeCalibration or VoxelCalibration.")
+
     destination = (
         Path(metadata_path)
         if metadata_path is not None
@@ -107,16 +128,15 @@ def write_analysis_metadata(
                 "two-level mask; selected extreme intensity" if foreground is not None else None
             ),
         },
-        "calibration": {
-            "pixel_size_x_um": calibration.scale_x_um,
-            "pixel_size_y_um": calibration.scale_y_um,
-            "isotropic": calibration.is_isotropic,
-            "source": calibration_source.strip(),
-        },
+        "calibration": calibration_metadata,
         "measurement_parameters": {
-            "connectivity": 8,
-            "minimum_component_area_px": min_area_px,
-            "perimeter_method": "0.5-level marching-squares contour; axis-specific physical spacing",
+            "connectivity": 8 if len(mask_shape) == 2 else 26,
+            "minimum_component_area_px" if len(mask_shape) == 2 else "minimum_component_voxels": min_area_px,
+            "perimeter_method": (
+                "0.5-level marching-squares contour; axis-specific physical spacing"
+                if len(mask_shape) == 2
+                else "0.5-level marching-cubes surface mesh; axis-specific physical spacing"
+            ),
         },
         "results": {
             result_count_label: measurement_count,
