@@ -128,7 +128,7 @@ raw_p_values = [0.01, 0.04, 0.03]
 print(adjust_pvalues_bh(raw_p_values))
 ```
 
-Welch's test reports a confidence interval for the difference in means. Mann–Whitney reports a rank-biserial correlation and does not provide a median-difference confidence interval. These functions do not replace study-specific statistical planning, assumption checks, mixed-effects models for repeated measurements, or adjustment for all sources of multiplicity. Avoid pseudoreplication: aggregate fields within each animal/sample or use a suitable hierarchical model.
+Welch's test reports a confidence interval for the difference in means. Mann–Whitney reports a rank-biserial correlation and does not provide a median-difference confidence interval. Read [statistical methods](docs/statistical-methods.md) before interpreting the output. These functions do not replace study-specific statistical planning, assumption checks, mixed-effects models for repeated measurements, or adjustment for all sources of multiplicity. Avoid pseudoreplication: aggregate fields within each animal/sample or use a suitable hierarchical model.
 
 ## Output measurements and units
 
