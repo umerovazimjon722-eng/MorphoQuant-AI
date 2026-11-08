@@ -24,6 +24,8 @@ MorphoQuant AI aims to provide transparent, modular, and testable workflows for 
 - Calibrate isotropic images or images with different horizontal and vertical pixel spacing.
 - Measure 8-connected 2D components in binary masks: pixel area, physical area, digital contour perimeter, equivalent diameter, pixel and physical centroids, eccentricity, and solidity.
 - Summarize researcher-annotated integer label masks class by class (for example, cortex and medulla), including area fraction, component count, component-size summaries, contour length, and area-weighted centroid.
+- Compare two annotation masks in 2D or 3D using per-class Dice, IoU, precision, recall, specificity, ASSD, and Hausdorff-95 in calibrated physical units.
+- Measure aligned 3D annotated label volumes using anisotropic Z/Y/X voxel spacing, volume, mesh surface area, equivalent sphere diameter, and sphericity.
 - Create side-by-side PNG quality-control previews that overlay annotated classes on the original microscopy image, with boundaries and a class legend.
 - Export measurements to a stable CSV schema.
 - Write a JSON provenance sidecar containing input/output SHA-256 checksums, calibration, mask settings, software version, and measurement parameters.
@@ -231,6 +233,38 @@ morphoquant compare-groups \
 ```
 
 The program aggregates fields to one row per animal/specimen before comparison. It writes a sample-level CSV and a JSON report containing group summaries, test output, input checksum, selected settings, and excluded groups. The researcher must justify the aggregation rule and statistical method in the protocol. These functions do not replace study-specific statistical planning, assumption checks, mixed-effects models for repeated measurements, or adjustment for all sources of multiplicity. Avoid pseudoreplication: aggregate fields within each animal/sample or use a suitable hierarchical model.
+
+### 3D label-volume morphometry
+
+For an OME-TIFF label volume with axes exactly `ZYX` and explicit X/Y/Z physical pixel sizes:
+
+```python
+from morphoquant import read_tiff_metadata, measure_labeled_volume
+from morphoquant.image_io import load_labeled_volume_tiff
+
+path = "adrenal_zones.ome.tif"
+metadata = read_tiff_metadata(path)
+voxel_calibration = metadata.to_voxel_calibration()
+labels_zyx = load_labeled_volume_tiff(path)
+
+results = measure_labeled_volume(
+    labels_zyx,
+    voxel_calibration,
+    label_names={1: "cortex", 2: "medulla"},
+)
+print(results)
+```
+
+The CLI provides the same workflow:
+
+```bash
+morphoquant measure-volume adrenal_zones.ome.tif \
+  --class-names class_names.json \
+  --min-voxels 10 \
+  --output results/adrenal_volume_summary.csv
+```
+
+The stack must already be spatially aligned and annotated. The tool does not register serial sections, interpolate missing sections, or infer tissue classes. Do not convert 2D area fractions to 3D volume fractions without a valid sampling and reconstruction design.
 
 ## Output measurements and units
 
