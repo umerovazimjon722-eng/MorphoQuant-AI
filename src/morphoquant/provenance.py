@@ -27,13 +27,14 @@ def write_analysis_metadata(
     output_csv_path: PathLike,
     calibration: MicroscopeCalibration,
     mask_shape: tuple[int, int],
-    foreground: str,
+    foreground: str | None,
     threshold: float | None,
     min_area_px: int,
     measurement_count: int,
     metadata_path: PathLike | None = None,
     analysis_type: str = "2D connected-component morphometry of a researcher-provided binary mask",
     label_names: Mapping[int, str] | None = None,
+    result_count_label: str = "component_count",
 ) -> Path:
     """Write a JSON sidecar recording inputs, parameters, units, and checksums.
 
@@ -49,8 +50,10 @@ def write_analysis_metadata(
         raise FileNotFoundError(f"Output CSV does not exist: {output_path}")
     if len(mask_shape) != 2 or any(int(size) < 1 for size in mask_shape):
         raise ValueError("mask_shape must contain two positive dimensions.")
-    if foreground not in ("bright", "dark"):
-        raise ValueError("foreground must be either 'bright' or 'dark'.")
+    if foreground is not None and foreground not in ("bright", "dark"):
+        raise ValueError("foreground must be 'bright', 'dark', or None.")
+    if not isinstance(result_count_label, str) or not result_count_label.isidentifier():
+        raise ValueError("result_count_label must be a valid identifier.")
     if not isinstance(analysis_type, str) or not analysis_type.strip():
         raise ValueError("analysis_type must be a non-empty string.")
     if label_names is not None:
@@ -96,7 +99,9 @@ def write_analysis_metadata(
             "class_names": {str(key): value for key, value in label_names.items()} if label_names is not None else None,
             "threshold_rule": (
                 "pixel > threshold" if foreground == "bright" else "pixel < threshold"
-            ) if threshold is not None else "two-level mask; selected extreme intensity",
+            ) if threshold is not None and foreground is not None else (
+                "two-level mask; selected extreme intensity" if foreground is not None else None
+            ),
         },
         "calibration": {
             "pixel_size_x_um": calibration.scale_x_um,
@@ -110,7 +115,7 @@ def write_analysis_metadata(
             "perimeter_method": "0.5-level marching-squares contour; axis-specific physical spacing",
         },
         "results": {
-            "component_count": measurement_count,
+            result_count_label: measurement_count,
             "csv_file_name": output_path.name,
             "csv_sha256": _sha256(output_path),
         },
