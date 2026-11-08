@@ -95,3 +95,24 @@ def test_calibration_rejects_incomplete_or_mixed_axis_scales():
             micrometers_per_pixel_x=0.5,
             micrometers_per_pixel_y=0.5,
         )
+
+
+def test_calibration_can_be_derived_from_measured_scale_bar():
+    calibration = MicroscopeCalibration.from_isotropic_reference(
+        reference_pixels=200,
+        reference_length_um=50,
+    )
+    assert calibration.scale_x_um == pytest.approx(0.25)
+    assert calibration.scale_y_um == pytest.approx(0.25)
+
+
+@pytest.mark.parametrize(
+    "pixels,length",
+    [(0, 50), (-1, 50), (200, 0), (200, float("nan"))],
+)
+def test_scale_bar_calibration_rejects_invalid_reference(pixels, length):
+    with pytest.raises(ValueError):
+        MicroscopeCalibration.from_isotropic_reference(
+            reference_pixels=pixels,
+            reference_length_um=length,
+        )
