@@ -17,6 +17,7 @@ MorphoQuant AI aims to provide transparent, modular, and testable workflows for 
 ## What works in this prototype
 
 - Load microscopy images as RGB arrays without modifying the source file.
+- Inspect TIFF/OME-TIFF metadata without loading full pixel planes; extract physical X/Y spacing when valid OME units or TIFF resolution units are present.
 - Load researcher-prepared grayscale binary masks with explicit foreground rules.
 - Require an explicit threshold for grayscale masks with more than two intensity values.
 - Calibrate isotropic images or images with different horizontal and vertical pixel spacing.
@@ -125,6 +126,18 @@ for region in measurements:
     print(region)
 ```
 
+Inspect a TIFF/OME-TIFF file without loading the full image into memory:
+
+```python
+from morphoquant import read_tiff_metadata
+
+metadata = read_tiff_metadata("adrenal_section.ome.tif")
+print(metadata.to_dict())
+
+# Only succeeds when valid physical sizes for both axes are present.
+calibration = metadata.to_calibration()
+```
+
 For anisotropic pixel spacing:
 
 ```python
@@ -174,7 +187,7 @@ Perimeter and shape descriptors depend on resolution, image preparation, connect
 
 ## Research integrity and limitations
 
-- Calibration must come from a calibrated scale bar, acquisition metadata, or another documented procedure. Do not infer it from image dimensions or a magnification label alone.
+- Calibration must come from a calibrated scale bar, acquisition metadata, or another documented procedure. OME-TIFF metadata is used only when both axis sizes and recognized physical units are present; missing or unknown units are never guessed. Do not infer it from image dimensions or a magnification label alone.
 - The current analysis is 2D and uses 8-connectivity.
 - A binary mask is an input, not a model prediction. Review masks against the source image.
 - A passing software test verifies computational behavior on test cases; it does not establish biological validity or clinical utility.
@@ -191,6 +204,7 @@ src/morphoquant/
 ├── __init__.py
 ├── calibration.py
 ├── image_io.py
+├── tiff_metadata.py
 ├── masks.py
 ├── morphometry.py
 ├── labeled_morphometry.py
