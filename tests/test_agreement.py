@@ -91,3 +91,23 @@ def test_agreement_rejects_invalid_label_names():
         compare_label_masks(
             labels, labels, spacing_um=(1.0, 1.0), label_names={1: ""}
         )
+
+
+def test_agreement_reports_explicitly_named_class_absent_from_both_masks():
+    reference = np.zeros((8, 8), dtype=np.uint8)
+    comparison = np.zeros_like(reference)
+    result = compare_label_masks(
+        reference,
+        comparison,
+        spacing_um=(0.5, 0.25),
+        label_names={1: "cortex"},
+    )[0]
+    assert result["class_id"] == 1
+    assert result["class_name"] == "cortex"
+    assert result["reference_pixels_or_voxels"] == 0
+    assert result["comparison_pixels_or_voxels"] == 0
+    assert result["dice"] == 1.0
+    assert result["intersection_over_union"] == 1.0
+    assert result["precision"] is None
+    assert result["recall"] is None
+    assert result["assd_um"] is None
