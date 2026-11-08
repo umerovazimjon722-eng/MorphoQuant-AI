@@ -6,9 +6,22 @@ build-backend = "setuptools.build_meta"
 name = "morphoquant-ai"
 version = "0.1.0"
 description = "Foundational tools for reproducible quantitative histology and morphometry"
+keywords = ["histology", "morphometry", "microscopy", "image-analysis", "reproducible-research"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = "MIT"
 dependencies = [
   "numpy>=1.24",
   "pillow>=10.0",
@@ -17,6 +30,11 @@ dependencies = [
 
 [project.scripts]
 morphoquant = "morphoquant.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/umerovazimjon722-eng/MorphoQuant-AI"
+Repository = "https://github.com/umerovazimjon722-eng/MorphoQuant-AI"
+Issues = "https://github.com/umerovazimjon722-eng/MorphoQuant-AI/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
