@@ -165,3 +165,87 @@ def adjust_pvalues_bh(p_values: Iterable[float]) -> List[float]:
     adjusted = np.empty_like(adjusted_sorted)
     adjusted[order] = adjusted_sorted
     return [float(value) for value in adjusted]
+
+def aggregate_subsamples_by_unit(
+    records: Iterable[Dict[str, object]],
+    *,
+    biological_unit_key: str,
+    measurement_key: str,
+    group_key: str | None = None,
+    aggregation: Literal["mean", "median"] = "mean",
+) -> List[Dict[str, object]]:
+    """Aggregate nested field/section measurements to biological-unit level.
+
+    Each input record represents one subsample (for example, a microscopic
+    field or histological section). Records sharing the same biological-unit
+    identifier are combined before downstream group comparisons.
+
+    If group_key is provided, every subsample for one biological unit must
+    have the same group label. Missing unit identifiers, missing/non-finite
+    measurements, unhashable identifiers, and inconsistent group assignments
+    are rejected.
+    """
+    if not isinstance(biological_unit_key, str) or not biological_unit_key.strip():
+        raise ValueError("biological_unit_key must be a non-empty string.")
+    if not isinstance(measurement_key, str) or not measurement_key.strip():
+        raise ValueError("measurement_key must be a non-empty string.")
+    if group_key is not None and (
+        not isinstance(group_key, str) or not group_key.strip()
+    ):
+        raise ValueError("group_key must be None or a non-empty string.")
+    if aggregation not in ("mean", "median"):
+        raise ValueError("aggregation must be 'mean' or 'median'.")
+
+    grouped: Dict[object, Dict[str, object]] = {}
+    for index, record in enumerate(records):
+        if not isinstance(record, dict):
+            raise TypeError(f"record {index} must be a dictionary.")
+        if biological_unit_key not in record:
+            raise ValueError(f"record {index} is missing {biological_unit_key!r}.")
+        if measurement_key not in record:
+            raise ValueError(f"record {index} is missing {measurement_key!r}.")
+
+        unit = record[biological_unit_key]
+        if unit is None or (isinstance(unit, str) and not unit.strip()):
+            raise ValueError(f"record {index} has a missing biological-unit identifier.")
+        try:
+            hash(unit)
+        except TypeError as exc:
+            raise TypeError("Biological-unit identifiers must be hashable.") from exc
+
+        value = record[measurement_key]
+        if isinstance(value, bool) or not isinstance(value, (int, float, np.number)):
+            raise TypeError(f"record {index} measurement must be numeric.")
+        numeric_value = float(value)
+        if not np.isfinite(numeric_value):
+            raise ValueError(f"record {index} measurement must be finite.")
+
+        group = record.get(group_key) if group_key is not None else None
+        if group_key is not None and (
+            group is None or (isinstance(group, str) and not group.strip())
+        ):
+            raise ValueError(f"record {index} has a missing group label.")
+
+        if unit not in grouped:
+            grouped[unit] = {"values": [], "group": group}
+        elif group_key is not None and grouped[unit]["group"] != group:
+            raise ValueError(
+                f"Biological unit {unit!r} is assigned to multiple groups."
+            )
+        grouped[unit]["values"].append(numeric_value)
+
+    output: List[Dict[str, object]] = []
+    for unit, entry in grouped.items():
+        values = np.asarray(entry["values"], dtype=float)
+        summary = float(np.mean(values) if aggregation == "mean" else np.median(values))
+        row: Dict[str, object] = {
+            biological_unit_key: unit,
+            "n_subsamples": int(values.size),
+            measurement_key: summary,
+            "aggregation": aggregation,
+        }
+        if group_key is not None:
+            row[group_key] = entry["group"]
+        output.append(row)
+
+    return output
