@@ -7,9 +7,33 @@ in a Boolean mask supplied by the caller.
 from typing import Dict, List
 
 import numpy as np
-from skimage.measure import label, regionprops
+from skimage.measure import find_contours, label, regionprops
 
 from .calibration import MicroscopeCalibration
+
+
+def _contour_perimeter(
+    component_mask: np.ndarray,
+    *,
+    pixel_size_y_um: float,
+    pixel_size_x_um: float,
+) -> tuple[float, float]:
+    """Estimate contour length in pixels and micrometres using marching squares."""
+    padded = np.pad(component_mask.astype(np.uint8), 1, mode="constant")
+    contours = find_contours(padded, level=0.5, fully_connected="high")
+    perimeter_px = 0.0
+    perimeter_um = 0.0
+
+    for contour in contours:
+        steps = np.diff(contour, axis=0)
+        dy_px = steps[:, 0]
+        dx_px = steps[:, 1]
+        perimeter_px += float(np.hypot(dx_px, dy_px).sum())
+        perimeter_um += float(
+            np.hypot(dx_px * pixel_size_x_um, dy_px * pixel_size_y_um).sum()
+        )
+
+    return perimeter_px, perimeter_um
 
 
 def measure_binary_mask(
@@ -19,9 +43,10 @@ def measure_binary_mask(
 ) -> List[Dict[str, float]]:
     """Measure connected components in a 2D Boolean mask.
 
-    The image is treated as an 8-connected 2D plane. Physical descriptors are
-    calculated with the supplied x/y pixel spacing, so anisotropic images are
-    not incorrectly treated as square pixels.
+    The image is treated as an 8-connected 2D plane. Physical area, centroids,
+    equivalent diameter, and shape descriptors use the supplied x/y pixel
+    spacing. Perimeter is estimated from 0.5-level marching-squares contours,
+    with each axis scaled separately.
 
     Parameters
     ----------
@@ -37,10 +62,9 @@ def measure_binary_mask(
     Returns
     -------
     list of dict
-        One dictionary per component. Pixel area and perimeter are reported
-        alongside physical area, perimeter, equivalent diameter, and centroid.
-        The perimeter remains a digital boundary estimator and is resolution-
-        and discretization-dependent.
+        One dictionary per component. Pixel and physical measurements are
+        returned together. Perimeter is a digital contour estimate and remains
+        dependent on resolution, connectivity, and boundary discretization.
     """
     if not isinstance(calibration, MicroscopeCalibration):
         raise TypeError("calibration must be a MicroscopeCalibration instance.")
@@ -63,7 +87,6 @@ def measure_binary_mask(
     )
 
     output: List[Dict[str, float]] = []
-    pixel_area_scale = calibration.scale_x_um * calibration.scale_y_um
 
     for pixel_region, physical_region in zip(pixel_regions, physical_regions):
         area_px2 = int(pixel_region.area)
@@ -72,14 +95,19 @@ def measure_binary_mask(
 
         centroid_y_px, centroid_x_px = pixel_region.centroid
         centroid_y_um, centroid_x_um = physical_region.centroid
+        perimeter_px, perimeter_um = _contour_perimeter(
+            pixel_region.image,
+            pixel_size_y_um=calibration.scale_y_um,
+            pixel_size_x_um=calibration.scale_x_um,
+        )
 
         output.append(
             {
                 "label": int(pixel_region.label),
                 "area_px2": area_px2,
                 "area_um2": float(physical_region.area),
-                "perimeter_px": float(pixel_region.perimeter),
-                "perimeter_um": float(physical_region.perimeter),
+                "perimeter_px": perimeter_px,
+                "perimeter_um": perimeter_um,
                 "equivalent_diameter_um": float(physical_region.equivalent_diameter_area),
                 "centroid_x_px": float(centroid_x_px),
                 "centroid_y_px": float(centroid_y_px),
