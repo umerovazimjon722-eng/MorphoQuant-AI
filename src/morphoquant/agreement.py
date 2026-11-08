@@ -99,9 +99,17 @@ def compare_label_masks(
             if not isinstance(name, str) or not name.strip():
                 raise ValueError("label_names values must be non-empty strings.")
 
+    present_class_ids = (
+        set(int(x) for x in np.unique(ref))
+        | set(int(x) for x in np.unique(pred))
+    )
+    requested_class_ids = (
+        {int(value) for value in label_names}
+        if label_names is not None
+        else set()
+    )
     class_ids = sorted(
-        (set(int(x) for x in np.unique(ref)) | set(int(x) for x in np.unique(pred)))
-        - {int(background_label)}
+        (present_class_ids | requested_class_ids) - {int(background_label)}
     )
     total = int(ref.size)
     results: List[Dict[str, float | int | str | None]] = []
