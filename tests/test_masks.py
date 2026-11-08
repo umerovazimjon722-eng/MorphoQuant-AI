@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from morphoquant.masks import load_binary_mask
+from morphoquant.masks import load_binary_mask, load_labeled_mask
 
 
 def test_load_binary_mask_accepts_two_level_mask(tmp_path):
@@ -56,3 +56,24 @@ def test_load_binary_mask_constant_image_is_empty(tmp_path):
     result = load_binary_mask(path)
 
     assert not result.any()
+
+
+def test_load_labeled_mask_preserves_integer_class_ids(tmp_path):
+    source = np.zeros((10, 12), dtype=np.uint8)
+    source[1:5, 2:7] = 1
+    source[6:9, 8:11] = 2
+    path = tmp_path / "labels.png"
+    Image.fromarray(source, mode="L").save(path)
+
+    loaded = load_labeled_mask(path)
+
+    assert loaded.dtype == np.uint8
+    assert np.array_equal(loaded, source)
+    assert set(np.unique(loaded)) == {0, 1, 2}
+
+
+def test_load_labeled_mask_rejects_rgb_and_negative_labels(tmp_path):
+    rgb_path = tmp_path / "rgb-labels.png"
+    Image.fromarray(np.zeros((5, 5, 3), dtype=np.uint8), mode="RGB").save(rgb_path)
+    with pytest.raises(ValueError, match="grayscale integer"):
+        load_labeled_mask(rgb_path)
