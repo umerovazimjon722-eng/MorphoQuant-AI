@@ -402,3 +402,69 @@ def test_cli_measure_volume_refuses_non_first_series_until_series_calibration_is
             "--series-index", "1",
             "--output", str(tmp_path / "out.csv"),
         ])
+
+
+def test_cli_measure_labels_refuses_to_overwrite_class_names_json(tmp_path):
+    import pytest
+
+    labels = np.zeros((8, 9), dtype=np.uint8)
+    labels[2:6, 2:7] = 1
+    source = tmp_path / "labels.png"
+    names = tmp_path / "classes.json"
+    Image.fromarray(labels, mode="L").save(source)
+    original_names = json.dumps({"1": "cortex"}).encode("utf-8")
+    names.write_bytes(original_names)
+
+    with pytest.raises(SystemExit):
+        main([
+            "measure-labels",
+            str(source),
+            "--micrometers-per-pixel",
+            "1",
+            "--class-names",
+            str(names),
+            "--output",
+            str(names),
+        ])
+
+    assert names.read_bytes() == original_names
+
+
+def test_cli_measure_volume_refuses_metadata_overwriting_class_names_json(tmp_path):
+    import tifffile
+    import pytest
+
+    labels = np.zeros((4, 8, 9), dtype=np.uint8)
+    labels[1:3, 2:6, 3:7] = 1
+    source = tmp_path / "labels.ome.tif"
+    names = tmp_path / "classes.json"
+    tifffile.imwrite(
+        source,
+        labels,
+        ome=True,
+        metadata={
+            "axes": "ZYX",
+            "PhysicalSizeX": 0.25,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.25,
+            "PhysicalSizeYUnit": "µm",
+            "PhysicalSizeZ": 1.0,
+            "PhysicalSizeZUnit": "µm",
+        },
+    )
+    original_names = json.dumps({"1": "cortex"}).encode("utf-8")
+    names.write_bytes(original_names)
+
+    with pytest.raises(SystemExit):
+        main([
+            "measure-volume",
+            str(source),
+            "--class-names",
+            str(names),
+            "--metadata-output",
+            str(names),
+            "--output",
+            str(tmp_path / "out.csv"),
+        ])
+
+    assert names.read_bytes() == original_names
