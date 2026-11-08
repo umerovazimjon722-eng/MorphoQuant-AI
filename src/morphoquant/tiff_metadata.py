@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 
 import tifffile
 
-from .calibration import MicroscopeCalibration
+from .calibration import MicroscopeCalibration, VoxelCalibration
 
 PathLike = Union[str, Path]
 
@@ -42,24 +42,25 @@ def _to_um(value: object, unit: object) -> Optional[float]:
     return numeric * factor
 
 
-def _ome_pixel_sizes(xml_text: str | None) -> tuple[Optional[float], Optional[float]]:
+def _ome_pixel_sizes(xml_text: str | None) -> tuple[Optional[float], Optional[float], Optional[float]]:
     if not xml_text:
-        return None, None
+        return None, None, None
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
-        return None, None
+        return None, None, None
 
     pixels = next(
         (element for element in root.iter() if element.tag.rsplit("}", 1)[-1] == "Pixels"),
         None,
     )
     if pixels is None:
-        return None, None
+        return None, None, None
 
     x = _to_um(pixels.attrib.get("PhysicalSizeX"), pixels.attrib.get("PhysicalSizeXUnit"))
     y = _to_um(pixels.attrib.get("PhysicalSizeY"), pixels.attrib.get("PhysicalSizeYUnit"))
-    return x, y
+    z = _to_um(pixels.attrib.get("PhysicalSizeZ"), pixels.attrib.get("PhysicalSizeZUnit"))
+    return x, y, z
 
 
 @dataclass(frozen=True)
@@ -74,11 +75,39 @@ class TiffImageMetadata:
     is_ome_tiff: bool
     pixel_size_x_um: Optional[float]
     pixel_size_y_um: Optional[float]
+    pixel_size_z_um: Optional[float]
 
     @property
     def has_physical_calibration(self) -> bool:
         """Whether both X and Y physical pixel spacings were found."""
         return self.pixel_size_x_um is not None and self.pixel_size_y_um is not None
+
+    @property
+    def has_voxel_calibration(self) -> bool:
+        """Whether physical X, Y, and Z voxel spacings are all available."""
+        return (
+            self.pixel_size_x_um is not None
+            and self.pixel_size_y_um is not None
+            and self.pixel_size_z_um is not None
+        )
+
+    def to_voxel_calibration(self) -> VoxelCalibration:
+        """Create Z-Y-X voxel calibration from explicit 3D metadata."""
+        if not self.has_voxel_calibration:
+            raise ValueError(
+                "TIFF metadata does not contain valid physical X, Y, and Z sizes. "
+                "Do not infer section spacing from nominal slice thickness or magnification."
+            )
+        if self.axes != "ZYX":
+            raise ValueError(
+                f"Automatic voxel calibration requires axes='ZYX'; found {self.axes!r}. "
+                "Select/reorder dimensions explicitly before 3D analysis."
+            )
+        return VoxelCalibration(
+            micrometers_per_voxel_z=float(self.pixel_size_z_um),
+            micrometers_per_voxel_y=float(self.pixel_size_y_um),
+            micrometers_per_voxel_x=float(self.pixel_size_x_um),
+        )
 
     @property
     def is_isotropic(self) -> Optional[bool]:
@@ -109,6 +138,7 @@ class TiffImageMetadata:
         record = asdict(self)
         record["shape"] = list(self.shape)
         record["has_physical_calibration"] = self.has_physical_calibration
+        record["has_voxel_calibration"] = self.has_voxel_calibration
         record["is_isotropic"] = self.is_isotropic
         return record
 
@@ -137,7 +167,7 @@ def read_tiff_metadata(path: PathLike) -> TiffImageMetadata:
             axes = str(series.axes)
             dtype = str(series.dtype)
             ome_xml = tiff.ome_metadata
-            x_um, y_um = _ome_pixel_sizes(ome_xml)
+            x_um, y_um, z_um = _ome_pixel_sizes(ome_xml)
 
             if x_um is None or y_um is None:
                 first_page = tiff.pages[0]
@@ -174,6 +204,7 @@ def read_tiff_metadata(path: PathLike) -> TiffImageMetadata:
                 is_ome_tiff=bool(ome_xml),
                 pixel_size_x_um=x_um,
                 pixel_size_y_um=y_um,
+                pixel_size_z_um=z_um,
             )
     except (tifffile.TiffFileError, OSError) as exc:
         raise ValueError(f"Could not read TIFF metadata: {image_path}") from exc
