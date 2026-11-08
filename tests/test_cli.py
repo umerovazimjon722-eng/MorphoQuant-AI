@@ -1,4 +1,5 @@
 import csv
+import json
 
 import numpy as np
 from PIL import Image
@@ -33,7 +34,7 @@ def test_cli_measures_mask_and_writes_csv(tmp_path, capsys):
     assert float(row["pixel_size_x_um"]) == 0.5
     assert float(row["pixel_size_y_um"]) == 0.5
     metadata_path = output.with_name("measurements.metadata.json")
-    metadata = __import__("json").loads(metadata_path.read_text(encoding="utf-8"))
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     assert metadata["segmentation_performed"] is False
     assert metadata["results"]["component_count"] == 1
 
