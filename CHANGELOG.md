@@ -10,6 +10,7 @@ All notable project changes are documented here.
 - Added calibrated area, contour perimeter, equivalent diameter, centroid, eccentricity, and solidity measurements.
 - Added stable CSV export.
 - Added JSON analysis provenance with input and output SHA-256 checksums.
+- Added sample-level descriptive summaries, Welch and Mann–Whitney independent-group comparisons, and Benjamini–Hochberg FDR adjustment.
 - Added a command-line interface through the `morphoquant` command.
 - Added automated tests and a GitHub Actions Python-version matrix.
 - Added methodological notes and a histology analysis record template.
