@@ -91,6 +91,26 @@ def _validate_output_paths(
         )
 
 
+def _validate_auxiliary_path(
+    input_path: Path,
+    output_path: Path,
+    metadata_path: Path | None,
+    auxiliary_path: Path | None,
+    auxiliary_name: str,
+) -> None:
+    """Prevent analysis outputs from overwriting auxiliary input files."""
+    if auxiliary_path is None:
+        return
+    auxiliary = auxiliary_path.resolve()
+    protected = {input_path.resolve(), output_path.resolve()}
+    if metadata_path is not None:
+        protected.add(metadata_path.resolve())
+    if auxiliary in protected:
+        raise ValueError(
+            f"The output paths must not overwrite the {auxiliary_name} input file."
+        )
+
+
 def _load_class_names(path: Path | None) -> Dict[int, str] | None:
     if path is None:
         return None
@@ -290,6 +310,9 @@ def _run_binary_analysis(args: argparse.Namespace, parser: argparse.ArgumentPars
 def _run_labeled_analysis(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     try:
         _validate_output_paths(args.mask, args.output, args.metadata_output)
+        _validate_auxiliary_path(
+            args.mask, args.output, args.metadata_output, args.class_names, "class-names JSON"
+        )
         calibration = _build_calibration(args)
         mask = load_labeled_mask(args.mask)
         class_names = _load_class_names(args.class_names)
@@ -333,11 +356,13 @@ def _run_overlay_analysis(args: argparse.Namespace, parser: argparse.ArgumentPar
         image_path = args.image.resolve()
         mask_path = args.mask.resolve()
         output_path = args.output.resolve()
-        class_names_path = args.class_names.resolve() if args.class_names is not None else None
         if output_path in {image_path, mask_path}:
             raise ValueError("The overlay PNG must not overwrite the source image or label mask.")
-        if class_names_path is not None and output_path == class_names_path:
-            raise ValueError("The overlay PNG must not overwrite the class-names JSON.")
+        _validate_auxiliary_path(
+            args.image, args.output, None, args.class_names, "class-names JSON"
+        )
+        if args.class_names is not None and args.class_names.resolve() == mask_path:
+            raise ValueError("The class-names JSON must differ from the label-mask input.")
 
         image = load_rgb_image(args.image)
         mask = load_labeled_mask(args.mask)
@@ -388,6 +413,9 @@ def _run_group_comparison(args: argparse.Namespace, parser: argparse.ArgumentPar
 def _run_volume_analysis(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     try:
         _validate_output_paths(args.volume, args.output, args.metadata_output)
+        _validate_auxiliary_path(
+            args.volume, args.output, args.metadata_output, args.class_names, "class-names JSON"
+        )
         if args.series_index != 0:
             raise ValueError(
                 "The CLI currently calibrates the first TIFF series only; "
