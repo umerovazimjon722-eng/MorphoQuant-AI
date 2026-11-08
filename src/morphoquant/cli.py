@@ -9,6 +9,7 @@ from .calibration import MicroscopeCalibration
 from .csv_export import write_measurements_csv
 from .masks import load_binary_mask
 from .morphometry import measure_binary_mask
+from .provenance import write_analysis_metadata
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -35,14 +36,32 @@ def build_parser() -> argparse.ArgumentParser:
     measure.add_argument(
         "--micrometers-per-pixel",
         type=float,
-        required=True,
-        help="calibrated physical pixel size in micrometres per pixel",
+        default=None,
+        help="isotropic pixel size in micrometres per pixel",
+    )
+    measure.add_argument(
+        "--micrometers-per-pixel-x",
+        type=float,
+        default=None,
+        help="horizontal pixel size in micrometres per pixel (use with --micrometers-per-pixel-y)",
+    )
+    measure.add_argument(
+        "--micrometers-per-pixel-y",
+        type=float,
+        default=None,
+        help="vertical pixel size in micrometres per pixel (use with --micrometers-per-pixel-x)",
     )
     measure.add_argument(
         "--output",
         type=Path,
         required=True,
         help="destination CSV file for measurements",
+    )
+    measure.add_argument(
+        "--metadata-output",
+        type=Path,
+        default=None,
+        help="optional provenance JSON path (default: <output-stem>.metadata.json)",
     )
     measure.add_argument(
         "--min-area-px",
@@ -72,7 +91,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "measure-mask":
         try:
-            calibration = MicroscopeCalibration(args.micrometers_per_pixel)
+            calibration = MicroscopeCalibration(
+                micrometers_per_pixel=args.micrometers_per_pixel,
+                micrometers_per_pixel_x=args.micrometers_per_pixel_x,
+                micrometers_per_pixel_y=args.micrometers_per_pixel_y,
+            )
             mask = load_binary_mask(
                 args.mask,
                 threshold=args.threshold,
@@ -84,12 +107,23 @@ def main(argv: Sequence[str] | None = None) -> int:
                 min_area_px=args.min_area_px,
             )
             output_path = write_measurements_csv(measurements, args.output)
+            metadata_path = write_analysis_metadata(
+                input_mask_path=args.mask,
+                output_csv_path=output_path,
+                calibration=calibration,
+                mask_shape=mask.shape,
+                foreground=args.foreground,
+                threshold=args.threshold,
+                min_area_px=args.min_area_px,
+                measurement_count=len(measurements),
+                metadata_path=args.metadata_output,
+            )
         except (FileNotFoundError, TypeError, ValueError, OSError) as exc:
             parser.error(str(exc))
 
         print(
             f"Measured {len(measurements)} connected component(s); "
-            f"wrote {output_path}."
+            f"wrote {output_path} and provenance {metadata_path}."
         )
         return 0
 
