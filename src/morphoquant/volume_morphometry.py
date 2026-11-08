@@ -137,7 +137,8 @@ def measure_labeled_volume(
                 "mean_component_volume_um3": float(np.mean(component_volumes)),
                 "median_component_volume_um3": float(np.median(component_volumes)),
                 "mean_equivalent_sphere_diameter_um": float(np.mean([
-                    region.equivalent_diameter_area for region in regions
+                    2.0 * (3.0 * float(region.area) / (4.0 * np.pi)) ** (1.0 / 3.0)
+                    for region in regions
                 ])),
                 "total_surface_area_um2": class_surface,
                 "sphericity": sphericity,
