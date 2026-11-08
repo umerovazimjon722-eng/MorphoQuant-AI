@@ -11,6 +11,8 @@ All notable project changes are documented here.
 - Added stable CSV export.
 - Added JSON analysis provenance with input and output SHA-256 checksums.
 - Added class-wise morphometry for researcher-annotated integer label masks, including tissue-zone summaries and area fractions.
+- Added calibrated 3D label-volume morphometry with anisotropic voxel spacing, marching-cubes surface area, and volume-derived sphericity.
+- Added 2D/3D annotation agreement metrics with Dice, IoU, precision, recall, specificity, ASSD, and Hausdorff-95.
 - Added lossless side-by-side PNG previews with class-colored annotation overlays, boundaries, and legends for visual quality control.
 - Added a biological-unit aggregation helper to reduce pseudoreplication risk when fields or sections are nested within animals/specimens.
 - Added an end-to-end tidy-CSV workflow that aggregates subsamples to biological units, compares two selected groups, and writes a sample-level CSV plus a checksummed JSON report.
