@@ -6,6 +6,7 @@ from .masks import load_binary_mask, load_labeled_mask
 from .morphometry import measure_binary_mask
 from .labeled_morphometry import measure_labeled_mask
 from .statistical_analysis import adjust_pvalues_bh, compare_independent_groups, describe_samples
+from .tiff_metadata import TiffImageMetadata, read_tiff_metadata
 
 __all__ = [
     "MicroscopeCalibration",
@@ -18,5 +19,7 @@ __all__ = [
     "describe_samples",
     "compare_independent_groups",
     "adjust_pvalues_bh",
+    "TiffImageMetadata",
+    "read_tiff_metadata",
 ]
 __version__ = "0.1.0"
