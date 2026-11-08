@@ -6,16 +6,17 @@ from pathlib import Path
 from typing import Dict, Sequence
 
 from . import __version__
-from .calibration import MicroscopeCalibration
-from .csv_export import write_labeled_measurements_csv, write_measurements_csv
+from .calibration import MicroscopeCalibration, VoxelCalibration
+from .csv_export import write_labeled_measurements_csv, write_measurements_csv, write_volume_measurements_csv
 from .labeled_morphometry import measure_labeled_mask
-from .image_io import load_rgb_image
+from .image_io import load_rgb_image, load_labeled_volume_tiff
 from .masks import load_binary_mask, load_labeled_mask
 from .morphometry import measure_binary_mask
 from .provenance import write_analysis_metadata
 from .tiff_metadata import read_tiff_metadata
 from .study_analysis import compare_groups_from_csv
 from .visualization import save_label_overlay
+from .volume_morphometry import measure_labeled_volume
 
 
 def _add_calibration_arguments(parser: argparse.ArgumentParser) -> None:
@@ -199,6 +200,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="minimum connected component area in pixels (default: 1)",
     )
 
+    volume = subparsers.add_parser(
+        "measure-volume",
+        help="measure class-wise 3D morphometry in a calibrated OME-TIFF ZYX label volume",
+    )
+    volume.add_argument("volume", type=Path, help="OME-TIFF integer label volume with axes ZYX")
+    volume.add_argument("--output", type=Path, required=True, help="destination class-summary CSV")
+    volume.add_argument("--metadata-output", type=Path, default=None, help="optional provenance JSON path")
+    volume.add_argument("--class-names", type=Path, default=None, help="optional class-name JSON")
+    volume.add_argument("--background-label", type=int, default=0)
+    volume.add_argument("--min-voxels", type=int, default=1)
+    volume.add_argument("--series-index", type=int, default=0)
+    volume.add_argument(
+        "--max-uncompressed-bytes",
+        type=int,
+        default=1_000_000_000,
+        help="maximum allowed decoded volume size (default: 1,000,000,000 bytes)",
+    )
+
     comparison = subparsers.add_parser(
         "compare-groups",
         help="aggregate subsamples by biological unit and compare two independent groups",
@@ -366,6 +385,49 @@ def _run_group_comparison(args: argparse.Namespace, parser: argparse.ArgumentPar
     return 0
 
 
+def _run_volume_analysis(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        _validate_output_paths(args.volume, args.output, args.metadata_output)
+        metadata = read_tiff_metadata(args.volume)
+        calibration = metadata.to_voxel_calibration()
+        labels = load_labeled_volume_tiff(
+            args.volume,
+            series_index=args.series_index,
+            max_uncompressed_bytes=args.max_uncompressed_bytes,
+        )
+        class_names = _load_class_names(args.class_names)
+        measurements = measure_labeled_volume(
+            labels,
+            calibration,
+            background_label=args.background_label,
+            label_names=class_names,
+            min_component_voxels=args.min_voxels,
+        )
+        output_path = write_volume_measurements_csv(measurements, args.output)
+        metadata_path = write_analysis_metadata(
+            input_mask_path=args.volume,
+            output_csv_path=output_path,
+            calibration=calibration,
+            mask_shape=labels.shape,
+            foreground=None,
+            threshold=None,
+            min_area_px=args.min_voxels,
+            measurement_count=len(measurements),
+            metadata_path=args.metadata_output,
+            analysis_type="3D class-wise morphometry of a researcher-annotated ZYX integer label volume",
+            label_names=class_names,
+            result_count_label="class_count",
+            calibration_source="OME-TIFF physical X/Y/Z metadata; verify against acquisition records",
+        )
+    except (FileNotFoundError, TypeError, ValueError, OSError) as exc:
+        parser.error(str(exc))
+    print(
+        f"Measured {len(measurements)} 3D annotation class(es); "
+        f"wrote {output_path} and provenance {metadata_path}."
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI. argv is injectable for tests."""
     parser = build_parser()
@@ -379,6 +441,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_overlay_analysis(args, parser)
     if args.command == "compare-groups":
         return _run_group_comparison(args, parser)
+    if args.command == "measure-volume":
+        return _run_volume_analysis(args, parser)
 
     parser.error("A command is required.")
     return 2
