@@ -57,3 +57,51 @@ def test_read_tiff_metadata_rejects_missing_or_invalid_files(tmp_path):
     bad.write_text("not a tiff", encoding="utf-8")
     with pytest.raises(ValueError, match="Could not read TIFF metadata"):
         read_tiff_metadata(bad)
+
+
+def test_read_ome_tiff_metadata_extracts_z_spacing_and_voxel_calibration(tmp_path):
+    from morphoquant.calibration import VoxelCalibration
+
+    path = tmp_path / "volume.ome.tif"
+    image = np.zeros((5, 12, 18), dtype=np.uint16)
+    tifffile.imwrite(
+        path,
+        image,
+        ome=True,
+        metadata={
+            "axes": "ZYX",
+            "PhysicalSizeX": 0.25,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.30,
+            "PhysicalSizeYUnit": "µm",
+            "PhysicalSizeZ": 1.5,
+            "PhysicalSizeZUnit": "µm",
+        },
+    )
+    metadata = read_tiff_metadata(path)
+    assert metadata.pixel_size_z_um == pytest.approx(1.5)
+    assert metadata.has_voxel_calibration is True
+    calibration = metadata.to_voxel_calibration()
+    assert isinstance(calibration, VoxelCalibration)
+    assert calibration.spacing_zyx_um == pytest.approx((1.5, 0.30, 0.25))
+
+
+def test_ome_tiff_without_z_spacing_cannot_create_voxel_calibration(tmp_path):
+    path = tmp_path / "no-z.ome.tif"
+    tifffile.imwrite(
+        path,
+        np.zeros((5, 12, 18), dtype=np.uint16),
+        ome=True,
+        metadata={
+            "axes": "ZYX",
+            "PhysicalSizeX": 0.25,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.30,
+            "PhysicalSizeYUnit": "µm",
+        },
+    )
+    metadata = read_tiff_metadata(path)
+    assert metadata.has_physical_calibration is True
+    assert metadata.has_voxel_calibration is False
+    with pytest.raises(ValueError, match="X, Y, and Z"):
+        metadata.to_voxel_calibration()
