@@ -88,3 +88,44 @@ def test_write_labeled_measurements_csv_preserves_class_summary_schema(tmp_path)
 def test_write_labeled_measurements_csv_rejects_missing_class_fields(tmp_path):
     with pytest.raises(ValueError, match="missing required fields"):
         write_labeled_measurements_csv([{"class_id": 1}], tmp_path / "bad-zones.csv")
+
+
+def test_write_volume_measurements_csv_uses_physical_units(tmp_path):
+    from morphoquant.csv_export import (
+        VOLUME_MEASUREMENT_COLUMNS,
+        write_volume_measurements_csv,
+    )
+
+    row = {
+        "class_id": 1,
+        "class_name": "cortex",
+        "component_count": 2,
+        "voxel_count": 100,
+        "volume_um3": 50.0,
+        "foreground_volume_percent": 75.0,
+        "mean_component_volume_um3": 25.0,
+        "median_component_volume_um3": 25.0,
+        "mean_equivalent_sphere_diameter_um": 3.0,
+        "total_surface_area_um2": 70.0,
+        "sphericity": 0.8,
+        "volume_weighted_centroid_z_um": 1.0,
+        "volume_weighted_centroid_y_um": 2.0,
+        "volume_weighted_centroid_x_um": 3.0,
+        "voxel_size_z_um": 1.0,
+        "voxel_size_y_um": 0.5,
+        "voxel_size_x_um": 0.25,
+        "connectivity": 26,
+    }
+    output = write_volume_measurements_csv([row], tmp_path / "volume.csv")
+    with output.open(encoding="utf-8", newline="") as source:
+        rows = list(csv.DictReader(source))
+    assert list(rows[0]) == list(VOLUME_MEASUREMENT_COLUMNS)
+    assert rows[0]["volume_um3"] == "50.0"
+    assert rows[0]["connectivity"] == "26"
+
+
+def test_write_volume_measurements_csv_rejects_incomplete_rows(tmp_path):
+    from morphoquant.csv_export import write_volume_measurements_csv
+
+    with pytest.raises(ValueError, match="missing required fields"):
+        write_volume_measurements_csv([{"class_id": 1}], tmp_path / "bad.csv")
