@@ -76,3 +76,33 @@ def load_binary_mask(
     if foreground == "bright":
         return np.asarray(values > threshold, dtype=bool)
     return np.asarray(values < threshold, dtype=bool)
+
+
+def load_labeled_mask(path: PathLike) -> np.ndarray:
+    """Load a grayscale integer label image without applying thresholding.
+
+    Integer class IDs are preserved. RGB, palette-indexed, floating-point,
+    and negative-valued label images are rejected to avoid silently changing
+    annotation identities.
+    """
+    image_path = Path(path)
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Label mask file does not exist: {image_path}")
+
+    try:
+        with Image.open(image_path) as image:
+            if image.mode not in {"1", "L", "I", "I;16", "I;16B", "I;16L"}:
+                raise ValueError(
+                    f"Expected a grayscale integer label image; received mode {image.mode!r}."
+                )
+            values = np.asarray(image).copy()
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError(f"Could not read a supported label image: {image_path}") from exc
+
+    if values.ndim != 2:
+        raise ValueError("Label image must be two-dimensional grayscale.")
+    if values.dtype == np.bool_ or not np.issubdtype(values.dtype, np.integer):
+        raise TypeError("Label image must contain integer class IDs.")
+    if np.any(values < 0):
+        raise ValueError("Label IDs must be non-negative.")
+    return values
