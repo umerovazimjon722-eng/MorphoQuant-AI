@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+message: "Please cite the MorphoQuant AI repository when referring to this software."
+title: "MorphoQuant AI"
+type: software
+repository-code: "https://github.com/umerovazimjon722-eng/MorphoQuant-AI"
+abstract: "An early-stage open-source toolkit for reproducible quantitative histology and morphometric analysis."
+license: MIT
