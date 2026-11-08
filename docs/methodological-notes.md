@@ -29,3 +29,14 @@ These are computational descriptors, not diagnoses or direct proxies for biologi
 Before use in a research study, define a measurement protocol, calibrate the imaging system, assess intra- and inter-observer variability where relevant, compare computational outputs with expert-reviewed measurements, and document exclusions and uncertainty. Use blinded validation data where appropriate.
 
 Synthetic unit tests verify software behavior only; they do not validate performance on biological tissue.
+
+
+## Multi-class label masks
+
+The class-wise morphometry module accepts an integer label image. Each pixel must contain a non-negative integer class ID; one ID is designated as background and excluded. The software does not infer what a class represents. Names such as "cortex" and "medulla" are researcher-supplied labels and must follow a documented annotation protocol.
+
+Each class is split into 8-connected components. Components smaller than the configured pixel-area threshold are excluded from that class summary. The reported class area percentage is calculated among the retained non-background components across all classes, not relative to the entire image. Component counts refer to connected image objects, not independent biological replicates.
+
+Area-weighted centroid coordinates summarize the spatial location of the retained class pixels. The reported aggregate perimeter is the sum of component contour estimates. It is not a measure of a closed anatomical boundary where the mask contains disconnected islands or holes.
+
+Before comparing class percentages between specimens, ensure that field-of-view selection, section orientation, tissue sampling, and annotation criteria are harmonized. A 2D area fraction is not automatically equivalent to a 3D volume fraction.
