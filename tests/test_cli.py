@@ -304,3 +304,72 @@ def test_cli_compare_groups_refuses_to_overwrite_input(tmp_path):
             "--report-output", str(tmp_path / "report.json"),
         ])
     assert source.read_bytes() == original
+
+
+def test_cli_measures_ome_tiff_3d_label_volume_and_writes_provenance(tmp_path, capsys):
+    import tifffile
+
+    labels = np.zeros((5, 12, 14), dtype=np.uint8)
+    labels[1:4, 2:7, 3:9] = 1
+    source = tmp_path / "adrenal-volume.ome.tif"
+    output = tmp_path / "volume-summary.csv"
+    names = tmp_path / "classes.json"
+    tifffile.imwrite(
+        source,
+        labels,
+        ome=True,
+        metadata={
+            "axes": "ZYX",
+            "PhysicalSizeX": 0.25,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.5,
+            "PhysicalSizeYUnit": "µm",
+            "PhysicalSizeZ": 2.0,
+            "PhysicalSizeZUnit": "µm",
+        },
+    )
+    names.write_text(json.dumps({"1": "cortex"}), encoding="utf-8")
+
+    result = main([
+        "measure-volume", str(source),
+        "--class-names", str(names),
+        "--output", str(output),
+    ])
+
+    assert result == 0
+    assert "Measured 1 3D annotation class(es)" in capsys.readouterr().out
+    with output.open(encoding="utf-8", newline="") as stream:
+        row = next(csv.DictReader(stream))
+    assert row["class_name"] == "cortex"
+    assert int(row["voxel_count"]) == 90
+    assert float(row["volume_um3"]) == pytest.approx(22.5)
+    metadata = json.loads(
+        output.with_name("volume-summary.metadata.json").read_text(encoding="utf-8")
+    )
+    assert metadata["calibration"]["voxel_size_z_um"] == 2.0
+    assert metadata["measurement_parameters"]["connectivity"] == 26
+
+
+def test_cli_measure_volume_rejects_missing_z_calibration(tmp_path):
+    import tifffile
+    import pytest
+
+    labels = np.zeros((4, 8, 9), dtype=np.uint8)
+    source = tmp_path / "no-z.ome.tif"
+    tifffile.imwrite(
+        source,
+        labels,
+        ome=True,
+        metadata={
+            "axes": "ZYX",
+            "PhysicalSizeX": 0.25,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.25,
+            "PhysicalSizeYUnit": "µm",
+        },
+    )
+    with pytest.raises(SystemExit):
+        main([
+            "measure-volume", str(source),
+            "--output", str(tmp_path / "out.csv"),
+        ])
