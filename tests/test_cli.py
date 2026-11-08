@@ -80,3 +80,64 @@ def test_cli_refuses_to_overwrite_input_mask(tmp_path):
         )
 
     assert source.read_bytes() == original_bytes
+
+def test_cli_summarizes_labeled_mask_and_writes_provenance(tmp_path, capsys):
+    mask = np.zeros((20, 30), dtype=np.uint8)
+    mask[2:12, 2:22] = 1
+    mask[14:19, 23:28] = 2
+    source = tmp_path / "zones.png"
+    output = tmp_path / "zone-results.csv"
+    names = tmp_path / "classes.json"
+    Image.fromarray(mask, mode="L").save(source)
+    names.write_text(json.dumps({"1": "cortex", "2": "medulla"}), encoding="utf-8")
+
+    result = main(
+        [
+            "measure-labels",
+            str(source),
+            "--micrometers-per-pixel-x",
+            "0.5",
+            "--micrometers-per-pixel-y",
+            "1.0",
+            "--class-names",
+            str(names),
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    assert "Summarized 2 annotation class(es)" in capsys.readouterr().out
+    with output.open(encoding="utf-8", newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+    assert [row["class_name"] for row in rows] == ["cortex", "medulla"]
+    assert float(rows[0]["area_um2"]) == 100.0
+    metadata = json.loads(
+        output.with_name("zone-results.metadata.json").read_text(encoding="utf-8")
+    )
+    assert metadata["segmentation_performed"] is False
+    assert metadata["results"]["class_count"] == 2
+    assert metadata["input_mask"]["class_names"] == {"1": "cortex", "2": "medulla"}
+
+
+def test_cli_rejects_invalid_class_name_json(tmp_path):
+    mask = np.zeros((8, 8), dtype=np.uint8)
+    source = tmp_path / "labels.png"
+    names = tmp_path / "classes.json"
+    Image.fromarray(mask, mode="L").save(source)
+    names.write_text('["not", "an", "object"]', encoding="utf-8")
+
+    import pytest
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "measure-labels",
+                str(source),
+                "--micrometers-per-pixel",
+                "1",
+                "--class-names",
+                str(names),
+                "--output",
+                str(tmp_path / "out.csv"),
+            ]
+        )
