@@ -294,7 +294,7 @@ Perimeter and shape descriptors depend on resolution, image preparation, connect
 - Real experimental data must be collected, handled, and shared under relevant institutional ethics approvals, privacy requirements, and animal-research standards.
 - The software is a research-support tool, not a medical device and not a substitute for expert histopathological interpretation.
 
-Read [methodological notes](docs/methodological-notes.md) before interpreting measurements. Use the [study record template](docs/analysis-protocol-template.md) to capture acquisition, calibration, annotation, quality assurance, and statistical-analysis details. Review the [research validation plan](docs/validation-plan.md) before using outputs in a biological study and the [development roadmap](ROADMAP.md) for future milestones. See [CHANGELOG.md](CHANGELOG.md) for the current prototype scope.
+Read [methodological notes](docs/methodological-notes.md) and the [scientific references](docs/references.md) before interpreting measurements. Use the [study record template](docs/analysis-protocol-template.md) to capture acquisition, calibration, annotation, quality assurance, and statistical-analysis details. Review the [research validation plan](docs/validation-plan.md) before using outputs in a biological study and the [development roadmap](ROADMAP.md) for future milestones. See [CHANGELOG.md](CHANGELOG.md) for the current prototype scope.
 
 ## Repository structure
 

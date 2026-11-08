@@ -84,3 +84,10 @@ The software does not register serial sections. Before interpreting a stack as a
 
 
 The 3D CLI currently accepts only the first TIFF series because the metadata reader's calibration record describes that first series. Do not use a different series index with the first series' calibration. Extract the required series into a separate ZYX file or extend the metadata selection to that series before analysis.
+
+
+## Scientific sources
+
+The main technical and methodological sources used by this prototype are listed in [Scientific and technical references](references.md). In particular, OME provides the image metadata model used by microscopy formats; scikit-image supplies several image-processing algorithms; and segmentation-evaluation literature emphasizes reporting complementary overlap and boundary metrics rather than relying on one score alone.
+
+For continuous measurements obtained by two observers or methods, consult Bland–Altman agreement methods. These continuous-measurement methods should not be confused with label-mask overlap metrics.
