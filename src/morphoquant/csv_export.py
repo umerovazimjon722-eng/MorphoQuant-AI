@@ -13,8 +13,12 @@ MEASUREMENT_COLUMNS = (
     "perimeter_px",
     "perimeter_um",
     "equivalent_diameter_um",
+    "centroid_x_px",
+    "centroid_y_px",
     "centroid_x_um",
     "centroid_y_um",
+    "pixel_size_x_um",
+    "pixel_size_y_um",
     "eccentricity",
     "solidity",
 )
@@ -24,7 +28,7 @@ def write_measurements_csv(
     measurements: Iterable[Mapping[str, object]],
     path: PathLike,
 ) -> Path:
-    """Write measurements using a documented, stable column order.
+    """Write measurements using a stable, documented column order.
 
     Empty measurement collections produce a header-only CSV. The destination
     parent directory is created when necessary.
