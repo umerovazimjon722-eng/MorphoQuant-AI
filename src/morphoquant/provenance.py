@@ -5,7 +5,7 @@ import hashlib
 import json
 from numbers import Integral
 from pathlib import Path
-from typing import Union
+from typing import Mapping, Union
 
 from . import __version__
 from .calibration import MicroscopeCalibration
@@ -32,6 +32,8 @@ def write_analysis_metadata(
     min_area_px: int,
     measurement_count: int,
     metadata_path: PathLike | None = None,
+    analysis_type: str = "2D connected-component morphometry of a researcher-provided binary mask",
+    label_names: Mapping[int, str] | None = None,
 ) -> Path:
     """Write a JSON sidecar recording inputs, parameters, units, and checksums.
 
@@ -49,6 +51,17 @@ def write_analysis_metadata(
         raise ValueError("mask_shape must contain two positive dimensions.")
     if foreground not in ("bright", "dark"):
         raise ValueError("foreground must be either 'bright' or 'dark'.")
+    if not isinstance(analysis_type, str) or not analysis_type.strip():
+        raise ValueError("analysis_type must be a non-empty string.")
+    if label_names is not None:
+        if not isinstance(label_names, Mapping):
+            raise TypeError("label_names must be a mapping.")
+        if any(
+            isinstance(key, bool) or not isinstance(key, Integral)
+            or not isinstance(value, str) or not value.strip()
+            for key, value in label_names.items()
+        ):
+            raise ValueError("label_names must map integer IDs to non-empty strings.")
     if isinstance(min_area_px, bool) or not isinstance(min_area_px, Integral) or min_area_px < 1:
         raise ValueError("min_area_px must be a positive integer.")
     if (
@@ -71,7 +84,7 @@ def write_analysis_metadata(
         "metadata_schema_version": "1.0",
         "software": "MorphoQuant AI",
         "software_version": __version__,
-        "analysis": "2D connected-component morphometry of a researcher-provided binary mask",
+        "analysis": analysis_type.strip(),
         "segmentation_performed": False,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "input_mask": {
@@ -80,6 +93,7 @@ def write_analysis_metadata(
             "shape_rows_columns": [int(mask_shape[0]), int(mask_shape[1])],
             "foreground": foreground,
             "threshold": threshold,
+            "class_names": {str(key): value for key, value in label_names.items()} if label_names is not None else None,
             "threshold_rule": (
                 "pixel > threshold" if foreground == "bright" else "pixel < threshold"
             ) if threshold is not None else "two-level mask; selected extreme intensity",
@@ -101,7 +115,7 @@ def write_analysis_metadata(
             "csv_sha256": _sha256(output_path),
         },
         "limitations": [
-            "The software does not perform tissue or cell segmentation.",
+            "The software does not perform tissue or cell segmentation or infer class labels.",
             "The input mask must be reviewed and validated by the researcher.",
             "Synthetic unit tests do not establish biological or clinical validity.",
             "Perimeter is a digital contour estimate affected by image resolution and boundary discretization.",
