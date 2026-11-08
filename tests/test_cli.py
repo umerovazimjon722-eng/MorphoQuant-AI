@@ -246,3 +246,61 @@ def test_cli_overlay_refuses_to_overwrite_source_image(tmp_path):
         ])
 
     assert image_path.read_bytes() == original_bytes
+
+
+def test_cli_compares_groups_after_sample_level_aggregation(tmp_path, capsys):
+    source = tmp_path / "field-measurements.csv"
+    with source.open("w", encoding="utf-8", newline="") as target:
+        writer = csv.DictWriter(target, fieldnames=["animal", "group", "cortical_area"])
+        writer.writeheader()
+        writer.writerows([
+            {"animal": "C1", "group": "control", "cortical_area": 10},
+            {"animal": "C1", "group": "control", "cortical_area": 12},
+            {"animal": "C2", "group": "control", "cortical_area": 11},
+            {"animal": "C3", "group": "control", "cortical_area": 9},
+            {"animal": "M1", "group": "metabolic", "cortical_area": 20},
+            {"animal": "M1", "group": "metabolic", "cortical_area": 22},
+            {"animal": "M2", "group": "metabolic", "cortical_area": 21},
+            {"animal": "M3", "group": "metabolic", "cortical_area": 19},
+        ])
+    sample_output = tmp_path / "animal-level.csv"
+    report_output = tmp_path / "comparison.json"
+    result = main([
+        "compare-groups", "--input", str(source),
+        "--biological-unit-column", "animal", "--group-column", "group",
+        "--measurement-column", "cortical_area",
+        "--group-a", "control", "--group-b", "metabolic",
+        "--method", "welch",
+        "--sample-level-output", str(sample_output),
+        "--report-output", str(report_output),
+    ])
+    assert result == 0
+    assert sample_output.is_file()
+    assert report_output.is_file()
+    assert "Compared 3 vs 3 biological units" in capsys.readouterr().out
+    with sample_output.open(encoding="utf-8", newline="") as sample_file:
+        assert len(list(csv.DictReader(sample_file))) == 6
+
+
+def test_cli_compare_groups_refuses_to_overwrite_input(tmp_path):
+    import pytest
+    source = tmp_path / "measurements.csv"
+    with source.open("w", encoding="utf-8", newline="") as target:
+        writer = csv.DictWriter(target, fieldnames=["animal", "group", "value"])
+        writer.writeheader()
+        writer.writerows([
+            {"animal": "A1", "group": "a", "value": 1},
+            {"animal": "A2", "group": "a", "value": 2},
+            {"animal": "B1", "group": "b", "value": 3},
+            {"animal": "B2", "group": "b", "value": 4},
+        ])
+    original = source.read_bytes()
+    with pytest.raises(SystemExit):
+        main([
+            "compare-groups", "--input", str(source),
+            "--biological-unit-column", "animal", "--group-column", "group",
+            "--measurement-column", "value", "--group-a", "a", "--group-b", "b",
+            "--sample-level-output", str(source),
+            "--report-output", str(tmp_path / "report.json"),
+        ])
+    assert source.read_bytes() == original

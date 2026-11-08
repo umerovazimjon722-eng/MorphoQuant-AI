@@ -14,6 +14,7 @@ from .masks import load_binary_mask, load_labeled_mask
 from .morphometry import measure_binary_mask
 from .provenance import write_analysis_metadata
 from .tiff_metadata import read_tiff_metadata
+from .study_analysis import compare_groups_from_csv
 from .visualization import save_label_overlay
 
 
@@ -198,6 +199,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="minimum connected component area in pixels (default: 1)",
     )
 
+    comparison = subparsers.add_parser(
+        "compare-groups",
+        help="aggregate subsamples by biological unit and compare two independent groups",
+    )
+    comparison.add_argument("--input", type=Path, required=True, help="tidy CSV, one row per subsample")
+    comparison.add_argument("--biological-unit-column", required=True)
+    comparison.add_argument("--group-column", required=True)
+    comparison.add_argument("--measurement-column", required=True)
+    comparison.add_argument("--group-a", required=True)
+    comparison.add_argument("--group-b", required=True)
+    comparison.add_argument("--aggregation", choices=("mean", "median"), default="mean")
+    comparison.add_argument("--method", choices=("welch", "mannwhitney"), default="welch")
+    comparison.add_argument("--confidence-level", type=float, default=0.95)
+    comparison.add_argument("--sample-level-output", type=Path, required=True)
+    comparison.add_argument("--report-output", type=Path, required=True)
+
     overlay = subparsers.add_parser(
         "overlay-labels",
         help="create a visual QC overlay for a researcher-annotated label image",
@@ -319,6 +336,36 @@ def _run_overlay_analysis(args: argparse.Namespace, parser: argparse.ArgumentPar
     return 0
 
 
+def _run_group_comparison(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        input_path = args.input.resolve()
+        sample_output = args.sample_level_output.resolve()
+        report_output = args.report_output.resolve()
+        if input_path in {sample_output, report_output}:
+            raise ValueError("Comparison outputs must not overwrite the input CSV.")
+        if sample_output == report_output:
+            raise ValueError("Sample-level CSV and JSON report must have different paths.")
+        report = compare_groups_from_csv(
+            args.input, args.sample_level_output, args.report_output,
+            biological_unit_column=args.biological_unit_column,
+            group_column=args.group_column,
+            measurement_column=args.measurement_column,
+            group_a=args.group_a,
+            group_b=args.group_b,
+            aggregation=args.aggregation,
+            method=args.method,
+            confidence_level=args.confidence_level,
+        )
+    except (FileNotFoundError, TypeError, ValueError, OSError) as exc:
+        parser.error(str(exc))
+    print(
+        f"Compared {report['groups'][args.group_a.strip()]['n']} vs "
+        f"{report['groups'][args.group_b.strip()]['n']} biological units; "
+        f"wrote {args.sample_level_output} and {args.report_output}."
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI. argv is injectable for tests."""
     parser = build_parser()
@@ -330,6 +377,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_labeled_analysis(args, parser)
     if args.command == "overlay-labels":
         return _run_overlay_analysis(args, parser)
+    if args.command == "compare-groups":
+        return _run_group_comparison(args, parser)
 
     parser.error("A command is required.")
     return 2

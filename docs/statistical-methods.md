@@ -42,3 +42,12 @@ The helper `aggregate_subsamples_by_unit` accepts row dictionaries in which each
 Choose mean or median aggregation before inspecting group differences and justify that choice in the protocol. This simple aggregation is suitable only when a sample-level summary matches the scientific estimand. It does not model within-animal variation; use an appropriate mixed-effects or hierarchical model when that variation is itself scientifically important.
 
 After aggregation, the number of returned rows is the number of biological units, not the number of image fields. Keep the original subsample data and document the aggregation rule.
+
+
+## End-to-end CSV group comparison
+
+The `compare-groups` command expects a tidy CSV with one row per field, section, or other subsample and explicit columns for biological-unit ID, experimental group, and one numeric measurement. Rows are aggregated by biological-unit ID before group-level statistics are calculated.
+
+Only the two group labels named by the researcher are compared. Other groups are excluded from that specific comparison and listed in the JSON report. The tool writes a sample-level CSV with one row per biological unit and a JSON report containing summaries, test output, input and output checksums, settings, and interpretive limitations.
+
+Use this command only when the chosen sample-level mean or median represents the scientific estimand. If within-animal variation is important, a simple aggregation is insufficient; use an appropriate mixed-effects or hierarchical model. The current CLI supports Welch's t-test and Mann–Whitney U for two independent groups and does not automatically check assumptions or adjust for multiple outcomes.

@@ -12,6 +12,7 @@ from .statistical_analysis import (
     describe_samples,
 )
 from .tiff_metadata import TiffImageMetadata, read_tiff_metadata
+from .study_analysis import compare_groups_from_csv
 from .visualization import save_label_overlay
 
 __all__ = [
@@ -29,5 +30,6 @@ __all__ = [
     "TiffImageMetadata",
     "read_tiff_metadata",
     "save_label_overlay",
+    "compare_groups_from_csv",
 ]
 __version__ = "0.1.0"

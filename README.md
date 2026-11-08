@@ -118,7 +118,7 @@ morphoquant overlay-labels adrenal_section.png adrenal_zones.png \
 
 The PNG includes the original image, a color overlay with boundaries, and a legend listing class IDs and pixel-area proportions. Large images are downscaled for preview only; quantitative measurements must use the original arrays. The tool visualizes supplied labels and does not segment tissue or infer class identity.
 
-Run `morphoquant --help`, `morphoquant measure-mask --help`, `morphoquant measure-labels --help`, or `morphoquant overlay-labels --help` for all options.
+Run `morphoquant --help`, `morphoquant measure-mask --help`, `morphoquant measure-labels --help`, `morphoquant overlay-labels --help`, or `morphoquant compare-groups --help` for all options.
 
 ## Python example
 
@@ -210,7 +210,27 @@ raw_p_values = [0.01, 0.04, 0.03]
 print(adjust_pvalues_bh(raw_p_values))
 ```
 
-Welch's test reports a confidence interval for the difference in means. Mann–Whitney reports a rank-biserial correlation and does not provide a median-difference confidence interval. Read [statistical methods](docs/statistical-methods.md) before interpreting the output. These functions do not replace study-specific statistical planning, assumption checks, mixed-effects models for repeated measurements, or adjustment for all sources of multiplicity. Avoid pseudoreplication: aggregate fields within each animal/sample or use a suitable hierarchical model.
+Welch's test reports a confidence interval for the difference in means. Mann–Whitney reports a rank-biserial correlation and does not provide a median-difference confidence interval. Read [statistical methods](docs/statistical-methods.md) before interpreting the output.
+
+### End-to-end group comparison from a tidy CSV
+
+Prepare a CSV with one row per microscopic field or section, including a biological sample ID, group label, and numeric measurement:
+
+```bash
+morphoquant compare-groups \
+  --input field_measurements.csv \
+  --biological-unit-column animal_id \
+  --group-column group \
+  --measurement-column cortical_area_um2 \
+  --group-a control \
+  --group-b metabolic_syndrome \
+  --aggregation mean \
+  --method welch \
+  --sample-level-output results/animal_level.csv \
+  --report-output results/group_comparison.json
+```
+
+The program aggregates fields to one row per animal/specimen before comparison. It writes a sample-level CSV and a JSON report containing group summaries, test output, input checksum, selected settings, and excluded groups. The researcher must justify the aggregation rule and statistical method in the protocol. These functions do not replace study-specific statistical planning, assumption checks, mixed-effects models for repeated measurements, or adjustment for all sources of multiplicity. Avoid pseudoreplication: aggregate fields within each animal/sample or use a suitable hierarchical model.
 
 ## Output measurements and units
 
