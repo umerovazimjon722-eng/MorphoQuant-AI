@@ -62,3 +62,22 @@ Do not use a scale bar that has been resized independently of the image or whose
 The visualization helper renders two panels from an RGB source image and an integer annotation mask: the original image and a color overlay with class boundaries and a legend. It does not alter the source arrays or infer class identities. Color assignment is deterministic for a given sorted set of class IDs.
 
 For memory control, previews can be downscaled to a maximum panel dimension. Downscaled output is for visual review only; do not use the preview pixels for quantitative measurement. Run morphometry on the original-resolution label mask with the original calibration metadata. Review overlays against the original image before accepting quantitative results.
+
+
+## Annotation agreement metrics
+
+The agreement module compares integer label arrays from two annotators or a reference annotation and a candidate segmentation. Arrays must be aligned, have identical shape and share the same class-ID convention. The reference role must be prespecified by an adjudication protocol; the software cannot determine biological truth.
+
+Dice and intersection-over-union quantify overlap. Precision, recall, and specificity are one-versus-rest class metrics. Average symmetric surface distance (ASSD), Hausdorff distance, and 95th-percentile Hausdorff distance quantify boundary discrepancy using calibrated pixel/voxel spacing. Spacing is provided in array-axis order: (Y, X) for 2D or (Z, Y, X) for 3D.
+
+If a class is absent in both arrays but explicitly supplied in class_names, Dice and IoU are 1.0 to represent agreement on absence. If absent in only one array, overlap is zero and boundary distances are undefined (null). Precision/recall are null when their denominators are zero. Agreement is not anatomical accuracy: readers can agree and still share the same systematic bias.
+
+## 3D label-volume morphometry
+
+The 3D module accepts a non-negative integer label volume in Z-Y-X order and explicit anisotropic voxel spacing in micrometres. Components use 26-connectivity. Physical volume is voxel count multiplied by the calibrated Z*Y*X voxel volume.
+
+Component surface area is estimated from a closed marching-cubes mesh generated on a one-voxel-padded component. Equivalent sphere diameter is calculated from component volume, not from a 2D circle formula. Class sphericity is calculated from total class volume and total estimated class surface area. These estimates depend on resolution, voxel anisotropy, topology, and boundary discretization.
+
+The TIFF loader requires axes exactly ZYX and checks a configurable uncompressed-memory limit before decoding. Time series, channels, RGB, and ambiguous dimension orders must be selected or reordered explicitly. Physical Z spacing must be present in metadata. Nominal section thickness is not automatically equivalent to center-to-center section spacing.
+
+The software does not register serial sections. Before interpreting a stack as a 3D specimen, validate section order, registration, missing sections, tissue deformation, shrinkage, and Z sampling interval. A 3D volume fraction requires a valid 3D sampling/reconstruction design.
