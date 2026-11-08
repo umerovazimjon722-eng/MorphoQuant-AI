@@ -3,6 +3,7 @@ import json
 
 import numpy as np
 from PIL import Image
+import tifffile
 
 from morphoquant.cli import main
 
@@ -137,6 +138,66 @@ def test_cli_rejects_invalid_class_name_json(tmp_path):
                 "1",
                 "--class-names",
                 str(names),
+                "--output",
+                str(tmp_path / "out.csv"),
+            ]
+        )
+
+
+def test_cli_uses_ome_tiff_calibration_and_records_source(tmp_path):
+    mask = np.zeros((12, 18), dtype=np.uint8)
+    mask[2:8, 3:13] = 255
+    source = tmp_path / "calibrated-mask.ome.tif"
+    output = tmp_path / "ome-results.csv"
+    tifffile.imwrite(
+        source,
+        mask,
+        ome=True,
+        metadata={
+            "axes": "YX",
+            "PhysicalSizeX": 0.5,
+            "PhysicalSizeXUnit": "µm",
+            "PhysicalSizeY": 0.75,
+            "PhysicalSizeYUnit": "µm",
+        },
+    )
+
+    result = main(
+        [
+            "measure-mask",
+            str(source),
+            "--use-tiff-metadata",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 0
+    with output.open(encoding="utf-8", newline="") as csv_file:
+        row = next(csv.DictReader(csv_file))
+    assert float(row["area_um2"]) == 60 * 0.5 * 0.75
+    metadata = json.loads(
+        output.with_name("ome-results.metadata.json").read_text(encoding="utf-8")
+    )
+    assert metadata["calibration"]["pixel_size_x_um"] == 0.5
+    assert metadata["calibration"]["pixel_size_y_um"] == 0.75
+    assert "TIFF/OME-TIFF metadata" in metadata["calibration"]["source"]
+
+
+def test_cli_rejects_mixing_tiff_metadata_and_manual_calibration(tmp_path):
+    mask = np.zeros((8, 8), dtype=np.uint8)
+    source = tmp_path / "plain.tif"
+    tifffile.imwrite(source, mask)
+
+    import pytest
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "measure-mask",
+                str(source),
+                "--use-tiff-metadata",
+                "--micrometers-per-pixel",
+                "1",
                 "--output",
                 str(tmp_path / "out.csv"),
             ]
