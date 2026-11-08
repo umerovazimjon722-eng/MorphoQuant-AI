@@ -24,7 +24,7 @@ MorphoQuant AI aims to provide transparent, modular, and testable workflows for 
 - Export measurements to a stable CSV schema.
 - Write a JSON provenance sidecar containing input/output SHA-256 checksums, calibration, mask settings, software version, and measurement parameters.
 - Run as an installable Python package or through a command-line interface.
-- Execute automated tests on Python 3.10, 3.11, and 3.12 through GitHub Actions.
+- Execute automated tests on Python 3.10, 3.11, 3.12, and 3.13 through GitHub Actions.
 
 **The package does not create the binary mask.** A researcher must supply a reviewed mask produced by manual annotation or a separately validated segmentation workflow. Automated tissue segmentation, adrenal-zone classification, cell detection, and diagnostic interpretation are not implemented.
 
