@@ -34,8 +34,8 @@ def test_welch_comparison_returns_mean_difference_and_confidence_interval():
 
 def test_mann_whitney_reports_rank_biserial_correlation():
     result = compare_independent_groups(
-        [1, 2, 3],
-        [4, 5, 6],
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
         method="mannwhitney",
     )
     assert result["p_value"] < 0.05
