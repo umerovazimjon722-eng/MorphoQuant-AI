@@ -24,6 +24,7 @@ MorphoQuant AI aims to provide transparent, modular, and testable workflows for 
 - Export measurements to a stable CSV schema.
 - Write a JSON provenance sidecar containing input/output SHA-256 checksums, calibration, mask settings, software version, and measurement parameters.
 - Run as an installable Python package or through a command-line interface.
+- Summarize sample-level outcomes and compare two independent groups using Welch's t-test or Mann–Whitney U, with Benjamini–Hochberg p-value adjustment utilities.
 - Execute automated tests on Python 3.10, 3.11, 3.12, and 3.13 through GitHub Actions.
 
 **The package does not create the binary mask.** A researcher must supply a reviewed mask produced by manual annotation or a separately validated segmentation workflow. Automated tissue segmentation, adrenal-zone classification, cell detection, and diagnostic interpretation are not implemented.
@@ -108,6 +109,26 @@ calibration = MicroscopeCalibration(
     micrometers_per_pixel_y=0.27,
 )
 ```
+
+## Statistical analysis API
+
+The `morphoquant.statistical_analysis` module provides descriptive summaries, two-group comparisons, and Benjamini–Hochberg false-discovery-rate adjustment.
+
+```python
+from morphoquant import compare_independent_groups, describe_samples, adjust_pvalues_bh
+
+# One value per independent biological replicate, not one value per microscope field.
+control = [12.1, 11.8, 12.5, 11.9, 12.3]
+treated = [14.0, 13.7, 14.4, 13.9, 14.1]
+
+print(describe_samples(control))
+print(compare_independent_groups(control, treated, method="welch"))
+
+raw_p_values = [0.01, 0.04, 0.03]
+print(adjust_pvalues_bh(raw_p_values))
+```
+
+Welch's test reports a confidence interval for the difference in means. Mann–Whitney reports a rank-biserial correlation and does not provide a median-difference confidence interval. These functions do not replace study-specific statistical planning, assumption checks, mixed-effects models for repeated measurements, or adjustment for all sources of multiplicity. Avoid pseudoreplication: aggregate fields within each animal/sample or use a suitable hierarchical model.
 
 ## Output measurements and units
 
