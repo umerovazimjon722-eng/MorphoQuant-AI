@@ -26,6 +26,7 @@ dependencies = [
   "pillow>=10.0",
   "scikit-image>=0.22",
   "scipy>=1.10",
+  "tifffile>=2023.7.10",
 ]
 
 [project.scripts]
