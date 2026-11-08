@@ -6,7 +6,7 @@ Morphometric measurements in physical units require a valid calibration for the 
 
 Do not infer calibration from image width, magnification labels alone, screenshots, or resized image dimensions. Resizing, scanning, compression, and export can change the relationship between pixels and physical distance.
 
-The present implementation assumes equal physical scale along horizontal and vertical axes. Images with anisotropic pixel spacing require an explicitly extended calibration model before physical perimeter or shape measurements should be trusted.
+The calibration model accepts either one isotropic scale or separate horizontal and vertical pixel spacings. When these differ, the implementation supplies both axes to region-based shape descriptors and scales contour coordinates independently. Do not force anisotropic images into a single averaged pixel size.
 
 ## Binary masks and connected components
 
@@ -17,7 +17,7 @@ The minimum-area filter is expressed in pixels. Area is converted to square micr
 ## Measurement interpretation
 
 - Area is the count of foreground pixels in a connected component.
-- Perimeter is the perimeter estimator returned by scikit-image and is resolution- and boundary-discretization-dependent.
+- Perimeter is estimated from 0.5-level marching-squares contours. Physical contour segments are scaled independently along the horizontal and vertical axes. The estimate remains resolution- and boundary-discretization-dependent.
 - Equivalent diameter is the diameter of a circle with the same pixel area.
 - Centroid coordinates are reported from the image origin, with x increasing by column and y increasing by row.
 - Eccentricity and solidity are dimensionless region descriptors.
