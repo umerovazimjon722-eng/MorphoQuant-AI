@@ -116,3 +116,32 @@ class MicroscopeCalibration:
         if not math.isfinite(float(square_pixels)) or square_pixels < 0:
             raise ValueError("square_pixels must be finite and non-negative.")
         return float(square_pixels * self.scale_x_um * self.scale_y_um)
+
+
+@dataclass(frozen=True)
+class VoxelCalibration:
+    """Physical voxel spacing in NumPy Z-Y-X axis order."""
+
+    micrometers_per_voxel_z: float
+    micrometers_per_voxel_y: float
+    micrometers_per_voxel_x: float
+
+    def __post_init__(self) -> None:
+        _positive_finite(self.micrometers_per_voxel_z, "micrometers_per_voxel_z")
+        _positive_finite(self.micrometers_per_voxel_y, "micrometers_per_voxel_y")
+        _positive_finite(self.micrometers_per_voxel_x, "micrometers_per_voxel_x")
+
+    @property
+    def spacing_zyx_um(self) -> tuple[float, float, float]:
+        """Return voxel spacing as (Z, Y, X) micrometres."""
+        return (
+            float(self.micrometers_per_voxel_z),
+            float(self.micrometers_per_voxel_y),
+            float(self.micrometers_per_voxel_x),
+        )
+
+    @property
+    def voxel_volume_um3(self) -> float:
+        """Physical volume represented by one voxel."""
+        z, y, x = self.spacing_zyx_um
+        return z * y * x
