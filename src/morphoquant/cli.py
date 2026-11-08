@@ -9,10 +9,12 @@ from . import __version__
 from .calibration import MicroscopeCalibration
 from .csv_export import write_labeled_measurements_csv, write_measurements_csv
 from .labeled_morphometry import measure_labeled_mask
+from .image_io import load_rgb_image
 from .masks import load_binary_mask, load_labeled_mask
 from .morphometry import measure_binary_mask
 from .provenance import write_analysis_metadata
 from .tiff_metadata import read_tiff_metadata
+from .visualization import save_label_overlay
 
 
 def _add_calibration_arguments(parser: argparse.ArgumentParser) -> None:
